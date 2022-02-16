@@ -1,28 +1,32 @@
 import abc
-
-from transformers import BlenderbotTokenizer, BlenderbotForConditionalGeneration, pipeline, AutoModelForSeq2SeqLM, \
-    AutoTokenizer
-
+import uuid
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from conversation import Message
 
 
 class AbstractAgent(abc.ABC):
     """Abstract base class that defines the interface for a conversational agent."""
 
-    def __init__(self):
+    @abc.abstractmethod
+    def __init__(self, testee=True):
+        self.agent_id = uuid.uuid4()
+        self.role = 'Testee' if testee else 'Other'
         pass
 
     @abc.abstractmethod
-    def act(self) -> Message:
-        "Define how to get a reply from the agent"
+    def act(self, conversation) -> Message:
+        """Define how to get a reply from the agent"""
         pass
+
+    def get_id(self):
+        return self.agent_id
 
 
 # ------- Different conversational agents implemented
 
 # Conversational agent where one human is involved
-class Human():
-    def __init__(self):
+class Human(AbstractAgent):
+    def __init__(self, testee=True):
         pass
 
     def act(self):
@@ -31,7 +35,7 @@ class Human():
 
 
 # BlenderBot's 400M model as a conversational agent
-class BlenderBot400M:
+class BlenderBot400M(AbstractAgent):
     def __init__(self):
         self.name = 'facebook/blenderbot-400M-distill'
         self.model = BlenderbotForConditionalGeneration.from_pretrained(self.name)
@@ -54,7 +58,7 @@ class BlenderBot400M:
 
 
 # Blenderbot's 90M model as a conversational agent
-class BlenderBot90M:
+class BlenderBot90M(AbstractAgent):
 
     def __init__(self):
         self.name = 'facebook/blenderbot_small-90M'

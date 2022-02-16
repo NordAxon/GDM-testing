@@ -11,14 +11,25 @@ parser.add_argument('-a', '--amount-convs', metavar='', type=int, help="How many
 parser.add_argument('-t', '--tested-gdms', metavar='', type=str, help="Write one or several GDMs you want to test. "
                                                                       "If several, have them separated by ','. ")
 parser.add_argument('-cp', '--conv-partner', metavar='', type=str, help="Specify which GDM to test your GDM against")
+parser.add_argument('-gd', '--gen-dialog', metavar='', type=bool, help="True: The script generates conversations using"
+                                                                       "the specified GDMs. False: Evaluates a "
+                                                                       ".txt-file")
 args = parser.parse_args()
 
 if __name__ == "__main__":
     if config.DEBUG_MODE:
         args.length_conv_round = 20
-        args.amount_convs = 20
-        args.tested_gdms = 'Blenderbot90m'
+        args.amount_convs = 1
         args.conv_partner = 'Blenderbot90m'
+        args.tested_gdms = 'Blenderbot90m'
+        args.gen_dialog = True
     test_world = worlds.TestWorld()
-    test_world.setup_scripts(length_conv_round=args.length_conv_round, amount_convs=args.amount_convs,
-                             tested_gdms=args.tested_gdms, conv_partner=args.conv_partner)
+    if args.gen_dialog:
+        test_world.setup_scripts(length_conv_round=args.length_conv_round, amount_convs=args.amount_convs,
+                                 tested_gdms=args.tested_gdms, conv_partner=args.conv_partner)
+        test_world.init_conversations()
+    else:
+        print('TODO: implement how to read a .txt-file')
+
+
+

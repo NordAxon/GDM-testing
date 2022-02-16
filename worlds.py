@@ -2,29 +2,33 @@ import abc
 from typing import List, Dict
 import config
 import conv_agents
+from conversation import Conversation
 
 
 class TestWorld(abc.ABC):
+    """ Class with the aim of controlling conversation agents, conversations and tests
+    """
 
     def __init__(self):
-        """ Object used to keep track of agents, dialogs and tests
-        Args:
-
-        """
         self.conv_length = 20
         self.amount_convs = 20
         self.report = []
         self.conversations = []
         self.conv_partner = None
         self.testees = None
-        pass
 
     # Setting up the script based upon the arguments passed from the CLI.
     def setup_scripts(self, length_conv_round, amount_convs, tested_gdms, conv_partner):
         self.conv_length = length_conv_round
         self.amount_convs = amount_convs
-        self.conv_partner = conv_agents.load_conv_agent(conv_partner)
+        self.conv_partner = conv_agents.load_conv_agent(conv_partner)[0]
         self.testees = conv_agents.load_conv_agent(tested_gdms)
+        pass
 
     def init_conversations(self):
-        print('Todo')
+        conv_partner = self.conv_partner
+        for i in range(len(self.testees)):
+            testee = self.testees[i]
+            for j in range(self.amount_convs):
+                self.conversations.append(Conversation().initiate_conversation(testee, conv_partner, self.conv_length))
+        print(self.conversations)

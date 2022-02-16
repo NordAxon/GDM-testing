@@ -1,1 +1,2 @@
 DEBUG_MODE = True
+VERBOSE = True
