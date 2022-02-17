@@ -2,6 +2,7 @@ import abc
 
 from conversation import Conversation
 
+
 class TestPlan():
 
     def __init__(self):
@@ -19,7 +20,7 @@ class AbstractTestCase(abc.ABC):
         pass
 
     def get_dialog(self):
-        return self.dialog.get_dialog()
+        return Conversation()
 
     @abc.abstractmethod
     def run(self) -> Conversation:
@@ -27,7 +28,7 @@ class AbstractTestCase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def analyse(self) -> Dict:
+    def analyse(self) -> Conversation:
         "Performs analysis of outcome"
         pass
 
@@ -43,7 +44,7 @@ class AbstractDialogTest(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def analyse(self, dialog: Dialog) -> Dict:
+    def analyse(self, dialog: Conversation):
         """Analyses the dialog
         Args:
             dialog (Dialog): Dialog to analyse

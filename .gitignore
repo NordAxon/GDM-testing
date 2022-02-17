@@ -132,3 +132,5 @@ fed
 fed/
 .idea
 .idea/
+
+general.py
