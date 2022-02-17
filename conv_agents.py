@@ -47,8 +47,8 @@ class Human(AbstractAgent):
 class BlenderBot400M(AbstractAgent):
     """ BlenderBot's 400M model as a conversational agent. """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, role='Other agent'):
+        AbstractAgent.__init__(self, role=role)
         self.name = 'facebook/blenderbot-400M-distill'
         self.model = BlenderbotForConditionalGeneration.from_pretrained(self.name)
         self.tokenizer = BlenderbotTokenizer.from_pretrained(self.name)
@@ -77,8 +77,8 @@ class BlenderBot90M(AbstractAgent):
     def __init__(self, role='Other agent'):
         AbstractAgent.__init__(self, role=role)
         self.name = 'facebook/blenderbot_small-90M'
-        self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/blenderbot_small-90M")
-        self.tokenizer = AutoTokenizer.from_pretrained("facebook/blenderbot_small-90M")
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.name)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.name)
 
         """ self.chat_memory regulates how many previous lines of the conversation that Blenderbot takes in. """
         self.chat_memory = 3
