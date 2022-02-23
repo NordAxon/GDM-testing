@@ -18,14 +18,12 @@ class AbstractAgent(abc.ABC):
         """ Define how to get a reply from the agent. """
         pass
 
-    """ Returns the ID of self. """
-
     def get_id(self):
+        """ Returns the ID of self. """
         return self.agent_id
 
-    """ Returns the role of self, as to find out if the message should be tested or not. """
-
     def get_role(self):
+        """ Returns the role of self, as to find out if the message should be tested or not. """
         return self.role
 
 

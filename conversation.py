@@ -62,12 +62,12 @@ class Conversation:
         print("{}: {}".format(self.whos_turn.get_role(), message.str())) if config.VERBOSE else print()
         return message
 
-    """ Function for switching the turn to the agent that did not produce the last response. """
     def switch_turn(self, testee, conv_partner):
+        """ Function for switching the turn to the agent that did not produce the last response. """
         self.whos_turn = testee if self.whos_turn.get_id() == conv_partner.get_id() else conv_partner
 
-    """ Method for converting the list of Messages into a list of strings, so that it is printable. """
     def str_conversation(self):
+        """ Method for converting the list of Messages into a list of strings, so that it is printable. """
         stringified_messages = []
         for elem in self.messages:
             stringified_messages.append(elem.str())
@@ -86,11 +86,11 @@ class Message:
         self.agent_id = agent_id
         self.role = role
 
-    """ Function for checking if a message belongs to the specific agent_id brought as a parameter. """
     def belongs_to(self, agent_id):
+        """ Function for checking if a message belongs to the specific agent_id brought as a parameter. """
         return agent_id == self.agent_id
 
-    """ Stringifies a message. That is, it turns a Message into a printable string. """
     def str(self):
+        """ Stringifies a message. That is, it turns a Message into a printable string. """
         return self.message
 
