@@ -32,10 +32,9 @@ def debug_script_setup(args):
     return args
 
 
-""" Main-function that initiates the whole script"""
-
 if __name__ == "__main__":
-    """ If DEBUG_MODE is specified to be True, you can specify the settings here inside the script so that you may 
+    """ Main-function that initiates the whole script. 
+    If DEBUG_MODE is specified to be True, you can specify the settings here inside the script so that you may 
     debug the code without the use of the CLI. """
     if config.DEBUG_MODE:
         args = debug_script_setup(args)
@@ -49,7 +48,7 @@ if __name__ == "__main__":
         test_world.setup_scripts(length_conv_round=args.length_conv_round, amount_convs=args.amount_convs,
                                  tested_gdms=args.tested_gdms, conv_partner=args.conv_partner,
                                  conv_start=args.conv_starter)
-        test_world.init_conversations()
-        test_world.eval_conversations()
+        conversation = test_world.init_conversations()
+        evaluation = test_world.init_tests(conversation)
     else:
         print('TODO: implement how to read a .txt-file')

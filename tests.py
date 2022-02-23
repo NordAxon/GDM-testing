@@ -44,10 +44,10 @@ class AbstractDialogTest(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def analyse(self, dialog: Conversation):
+    def analyse(self, conversation: Conversation):
         """Analyses the dialog
         Args:
-            dialog (Dialog): Dialog to analyse
+            conversation (Conversation): Conversation to analyse
         Returns:
             Dict: Dictionary with metrics produced by test
         """
