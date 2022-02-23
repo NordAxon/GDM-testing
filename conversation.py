@@ -20,12 +20,20 @@ class Conversation:
     """ Function for running one conversation between testee and conv_partner. The function lets every GDM produce 
     conv_length responses with regards to the conversation and last response produced. The messages produced are stored 
     in self.messages which is then returned to TestWorld. """
-    def initiate_conversation(self, testee, conv_partner, conv_length):
-        self.messages.append(Message(generate_random_text('Hi, '), 'generator', 'generator'))
-        print("{}: {}".format('Generated starter', self.messages[0].str()))
+    def initiate_conversation(self, testee, conv_partner, conv_length, conv_starter=None):
+        """ Only randomizes conversation start if config.RANDOM_CONV_START is True. """
+        if config.RANDOM_CONV_START:
+            self.messages.append(Message(generate_random_text('Hi, '), 'generator', 'generator'))
+            print("{}: {}".format('Generated starter', self.messages[0].str()))
 
-        """ Randomizes who will produce the first response (except for the randomized conversation starter). """
-        if random.randint(0, 1) == 0:
+        """ If conv_starter is specified from the CLI, conv_starter is not None and the starter is set according to the
+        conv_starter. If it is none, it is randomized with 50/50 probability if testee or conv_partner starts. """
+        if conv_starter is not None:
+            if conv_starter.lower() == "testee":
+                self.whos_turn = testee
+            else:
+                self.whos_turn = conv_partner
+        elif random.randint(0, 1) == 0:
             self.whos_turn = testee
         else:
             self.whos_turn = conv_partner
@@ -38,7 +46,7 @@ class Conversation:
             print("{}: {}".format(self.whos_turn.get_role(), message.str())) if config.VERBOSE else print()
             self.messages.append(message)
             self.switch_turn(testee, conv_partner)
-        return self.messages
+        return self
 
     """ Function for switching the turn to the agent that did not produce the last response. """
     def switch_turn(self, testee, conv_partner):
@@ -50,6 +58,10 @@ class Conversation:
         for elem in self.messages:
             stringified_messages.append(elem.str())
         return stringified_messages
+
+    """ Return list of messages. """
+    def get_messages(self):
+        return self.messages
 
 
 class Message:

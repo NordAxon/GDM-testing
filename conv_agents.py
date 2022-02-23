@@ -1,7 +1,7 @@
 import abc
 import uuid
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, BlenderbotForConditionalGeneration, BlenderbotTokenizer
-from conversation import Message
+from conversation import Message, Conversation
 
 
 class AbstractAgent(abc.ABC):
@@ -14,7 +14,7 @@ class AbstractAgent(abc.ABC):
         self.role = role
 
     @abc.abstractmethod
-    def act(self, conversation) -> Message:
+    def act(self, conversation: Conversation) -> Message:
         """ Define how to get a reply from the agent. """
         pass
 
@@ -39,7 +39,7 @@ class Human(AbstractAgent):
     def __init__(self):
         super().__init__()
 
-    def act(self):
+    def act(self, conversation):
         response = input("You: ")
         return response
 
@@ -56,7 +56,7 @@ class BlenderBot400M(AbstractAgent):
         """ self.chat_memory regulates how many previous lines of the conversation that Blenderbot takes in. """
         self.chat_memory = 3
 
-    def act(self, conversation):
+    def act(self, conversation: Conversation):
         conv_string = self.__array2blenderstring(conversation[-self.chat_memory:])
         if len(conv_string) > 128:
             conv_string = conv_string[-128:]
@@ -83,7 +83,7 @@ class BlenderBot90M(AbstractAgent):
         """ self.chat_memory regulates how many previous lines of the conversation that Blenderbot takes in. """
         self.chat_memory = 3
 
-    def act(self, conversation):
+    def act(self, conversation: Conversation):
         conv_string = '.'.join(elem for elem in conversation[-self.chat_memory:])
         inputs = self.tokenizer([conv_string], return_tensors='pt')
         reply_ids = self.model.generate(**inputs)
