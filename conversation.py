@@ -45,20 +45,20 @@ class Conversation:
         Loops 2 * conv_length response requests, where each turn self.whos_turn produces the response and then
                 self.whos_turn is switched to the other conversation partner. """
         for i in range(2 * conv_length):
-            message = self.produce_message(whos_turn=self.whos_turn)
+            message = self.produce_message()
             self.messages.append(message)
             self.switch_turn(self.testee, self.conv_partner)
         return self
 
-    def produce_message(self, whos_turn, injected_sent=None):
+    def produce_message(self, injected_sent=None):
         """ Function for producing one message from whos_turn. If injected_sent is not None, then that string may
         override the normal generate response procedure, and take its place."""
 
         if injected_sent is not None:
-            message = Message(message=injected_sent, agent_id=whos_turn.get_id(), role=whos_turn.get_role())
+            message = Message(message=injected_sent, agent_id=self.whos_turn.get_id(), role=self.whos_turn.get_role())
         else:
-            message = Message(whos_turn.act(self.str_conversation()), whos_turn.get_id(),
-                              role=whos_turn.get_role())
+            message = Message(self.whos_turn.act(self.str_conversation()), self.whos_turn.get_id(),
+                              role=self.whos_turn.get_role())
         print("{}: {}".format(self.whos_turn.get_role(), message.str())) if config.VERBOSE else print()
         return message
 
