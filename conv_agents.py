@@ -14,7 +14,7 @@ class AbstractAgent(abc.ABC):
         self.role = role
 
     @abc.abstractmethod
-    def act(self, conversation: Conversation) -> Message:
+    def act(self, messages) -> Message:
         """ Define how to get a reply from the agent. """
         pass
 
@@ -54,8 +54,8 @@ class BlenderBot400M(AbstractAgent):
         """ self.chat_memory regulates how many previous lines of the conversation that Blenderbot takes in. """
         self.chat_memory = 3
 
-    def act(self, conversation: Conversation):
-        conv_string = self.__array2blenderstring(conversation[-self.chat_memory:])
+    def act(self, messages):
+        conv_string = self.__array2blenderstring(messages[-self.chat_memory:])
         if len(conv_string) > 128:
             conv_string = conv_string[-128:]
         inputs = self.tokenizer([conv_string], return_tensors='pt')
@@ -81,8 +81,8 @@ class BlenderBot90M(AbstractAgent):
         """ self.chat_memory regulates how many previous lines of the conversation that Blenderbot takes in. """
         self.chat_memory = 3
 
-    def act(self, conversation: Conversation):
-        conv_string = '.'.join(elem for elem in conversation[-self.chat_memory:])
+    def act(self, messages):
+        conv_string = '.'.join(elem for elem in messages[-self.chat_memory:])
         inputs = self.tokenizer([conv_string], return_tensors='pt')
         reply_ids = self.model.generate(**inputs)
         response = self.tokenizer.batch_decode(reply_ids, skip_special_tokens=True)[0]
