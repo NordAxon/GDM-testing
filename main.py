@@ -44,11 +44,12 @@ if __name__ == "__main__":
 
     """ if args.gen_dialog is set to True, the framework will generate conversations based upon the specified settings,
     otherwise it will read a .txt-file and go direct to evaluating those. """
+    conversations = []
     if args.gen_dialog:
         test_world.setup_scripts(length_conv_round=args.length_conv_round, amount_convs=args.amount_convs,
                                  tested_gdms=args.tested_gdms, conv_partner=args.conv_partner,
                                  conv_start=args.conv_starter)
-        conversation = test_world.init_conversations()
-        evaluation = test_world.init_tests(conversation)
+        conversations = test_world.init_conversations()
     else:
         print('TODO: implement how to read a .txt-file')
+    evaluation = test_world.init_tests(conversations)

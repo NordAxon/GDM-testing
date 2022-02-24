@@ -90,7 +90,7 @@ class Message:
         """ Function for checking if a message belongs to the specific agent_id brought as a parameter. """
         return agent_id == self.agent_id
 
-    def str(self):
+    def __str__(self):
         """ Stringifies a message. That is, it turns a Message into a printable string. """
         return self.message
 

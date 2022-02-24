@@ -3,7 +3,7 @@ import abc
 from conversation import Conversation
 
 
-class TestPlan():
+class TestPlan:
 
     def __init__(self):
         pass

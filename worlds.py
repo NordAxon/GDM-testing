@@ -40,7 +40,6 @@ class TestWorld:
                 self.conversations.append(conv)
         print(self.conversations)
 
-    def init_tests(self, conversation):
+    def init_tests(self, conversations):
         """ Initiates the evaluation of the conversations produced. """
-        print(self.conversations)
-        pass
+

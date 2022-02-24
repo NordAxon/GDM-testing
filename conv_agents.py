@@ -35,7 +35,7 @@ class Human(AbstractAgent):
      is you who talk with the other agent. """
 
     def __init__(self):
-        super().__init__()
+        AbstractAgent.__init__()
 
     def act(self, conversation):
         response = input("You: ")
@@ -99,7 +99,7 @@ available_agents = {
 
 
 def load_conv_agent(agents, role='Other agent'):
-    """ Method used for interpreting the CLI arguments and return instantiated conv_agents. """
+    """ Method used for interpreting the CLI argument string and return instantiated conv_agents. """
     agents = agents.lower()
     agents = agents.split(',')
     list_conv_agents = []
