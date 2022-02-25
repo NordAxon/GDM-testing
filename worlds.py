@@ -19,9 +19,9 @@ class TestWorld:
         self.testees = None
         self.conv_start = None
 
-    def setup_scripts(self, length_conv_round, amount_convs, tested_gdms, conv_partner, conv_start=None):
+    def setup_scripts(self, conv_length, amount_convs, tested_gdms, conv_partner, conv_start=None):
         """ Setting up the script based upon the arguments passed from the CLI. """
-        self.conv_length = length_conv_round
+        self.conv_length = conv_length
         self.amount_convs = amount_convs
         self.conv_partner = conv_agents.load_conv_agent(conv_partner)[0]
         self.testees = conv_agents.load_conv_agent(tested_gdms, role='Testee')
@@ -42,4 +42,5 @@ class TestWorld:
 
     def init_tests(self, conversations):
         """ Initiates the evaluation of the conversations produced. """
+        pass
 
