@@ -8,7 +8,7 @@ def debug_script_setup():
     args = {}
     args['length_conv_round'] = 2
     args['amount_convs'] = 2
-    args['conv_partner'] = 'Blenderbot90m'
+    args['conv_partner'] = 'Blenderbot400m'
     args['tested_gdms'] = 'Blenderbot90m,BlendERboT90m'
     args['gen_dialog'] = True
     args['conv_starter'] = ""

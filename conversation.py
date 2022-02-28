@@ -46,7 +46,7 @@ class Conversation:
         for i in range(2 * conv_length):
             message = self.produce_message()
             self.messages.append(message)
-            self.switch_turn(self.testee, self.conv_partner)
+            self.switch_turn()
         return self
 
     def produce_message(self, injected_sent=None):
@@ -61,9 +61,9 @@ class Conversation:
         print("{}: {}".format(self.whos_turn.get_role(), message.__str__())) if config.VERBOSE else print()
         return message
 
-    def switch_turn(self, testee, conv_partner):
+    def switch_turn(self):
         """ Function for switching the turn to the agent that did not produce the last response. """
-        self.whos_turn = testee if self.whos_turn.get_id() == conv_partner.get_id() else conv_partner
+        self.whos_turn = self.testee if self.whos_turn.get_id() == self.conv_partner.get_id() else self.conv_partner
 
     def str_conversation(self):
         """ Method for converting the list of Messages into a list of strings, so that it is printable. """
