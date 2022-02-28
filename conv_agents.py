@@ -79,7 +79,7 @@ class BlenderBot90M(AbstractAgent):
         self.tokenizer = AutoTokenizer.from_pretrained(self.name)
 
         """ self.chat_memory regulates how many previous lines of the conversation that Blenderbot takes in. """
-        self.chat_memory = 3
+        self.chat_memory = 6
 
     def act(self, messages):
         conv_string = '.'.join(elem for elem in messages[-self.chat_memory:])

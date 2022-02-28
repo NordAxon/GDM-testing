@@ -10,28 +10,27 @@ def generate_random_text(start_str):
     return generator(start_str, max_length=30, num_return_sequences=1)[0]['generated_text']
 
 
-class Dialog:
-    """Class for keeping track of a dialog, which includes several messages"""
+class Conversation:
+    """Class for keeping track of a conversation, which includes several messages"""
 
-    def __init__(self, testee, dialog_partner, dialog_starter=None):
+    def __init__(self, testee, conv_partner, conv_starter=None):
         self.messages = []
         self.whos_turn = ""
         self.testee = testee
-        self.dialog_partner = dialog_partner
+        self.conv_partner = conv_partner
 
         """ Only randomizes conversation start if config.RANDOM_CONV_START is True. """
-        if config.RANDOM_DIALOG_START:
-            dialog_start = 'Hi, '
-            self.messages.append(Message(generate_random_text(dialog_start), 'generator', 'generator'))
-            print("{}: {}".format('Generated starter', self.messages[0].str()))
+        if config.RANDOM_CONV_START:
+            conversation_start = 'Hi, '
+            self.messages.append(Message(generate_random_text(conversation_start), 'generator', 'generator'))
+            print("{}: {}".format('Generated starter', self.messages[0].__str__()))
 
         """ If conv_starter is specified from the CLI, conv_starter is not None and the starter is set according to the
                 conv_starter. If it is none, it is randomized with 50/50 probability if testee or conv_partner starts. """
-        if dialog_starter is not None:
-            if dialog_starter.lower() == "testee":
-                self.whos_turn = testee
-            else:
-                self.whos_turn = conv_partner
+        if conv_starter.lower() == "testee":
+            self.whos_turn = testee
+        elif conv_starter.lower() == "conv_partner":
+            self.whos_turn = conv_partner
         elif random.randint(0, 1) == 0:
             self.whos_turn = testee
         else:
@@ -59,7 +58,7 @@ class Dialog:
         else:
             message = Message(self.whos_turn.act(self.str_conversation()), self.whos_turn.get_id(),
                               role=self.whos_turn.get_role())
-        print("{}: {}".format(self.whos_turn.get_role(), message.str())) if config.VERBOSE else print()
+        print("{}: {}".format(self.whos_turn.get_role(), message.__str__())) if config.VERBOSE else print()
         return message
 
     def switch_turn(self, testee, conv_partner):
@@ -70,7 +69,7 @@ class Dialog:
         """ Method for converting the list of Messages into a list of strings, so that it is printable. """
         stringified_messages = []
         for elem in self.messages:
-            stringified_messages.append(elem.str())
+            stringified_messages.append(elem.__str__())
         return stringified_messages
 
     """ Return list of messages. """
