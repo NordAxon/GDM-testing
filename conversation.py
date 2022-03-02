@@ -72,9 +72,13 @@ class Conversation:
             stringified_messages.append(elem.__str__())
         return stringified_messages
 
-    """ Return list of messages. """
     def get_messages(self):
+        """ Returns list of messages. """
         return self.messages
+
+    def conv_from_file(self, lines):
+        for i in range(len(lines)):
+            self.messages[i] = lines[i]
 
 
 class Message:

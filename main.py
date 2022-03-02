@@ -6,10 +6,10 @@ import worlds
 def debug_script_setup():
     """ If Config.DEBUG is True, the following settings are used for setting up the script. """
     args = {}
-    args['length_conv_round'] = 2
+    args['length_conv_round'] = 3
     args['amount_convs'] = 2
-    args['conv_partner'] = 'Blenderbot400m'
-    args['tested_gdms'] = 'Blenderbot90m,BlendERboT90m'
+    args['conv_partner'] = 'Blenderbot90m'
+    args['tested_gdms'] = 'Blenderbot90m'
     args['gen_dialog'] = True
     args['conv_starter'] = ""
     return args
@@ -31,9 +31,6 @@ if __name__ == "__main__":
 
     """ if args.gen_dialog is set to True, the framework will generate conversations based upon the specified settings,
     otherwise it will read a .txt-file and go direct to evaluating those. """
-    conversations = []
-    if config.GENERATE_DIALOGUE:
-        conversations = test_world.init_conversations()
-    else:
-        print('TODO: implement how to read a .txt-file')
-    evaluation = test_world.init_tests(conversations)
+    test_world.init_conversations()
+    test_world.init_tests()
+    test_world.present_results()

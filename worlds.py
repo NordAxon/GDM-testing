@@ -3,6 +3,7 @@ from typing import List, Dict
 import config
 import conv_agents
 from conversation import Conversation
+from test_manager import TestManager
 
 
 class TestWorld:
@@ -17,7 +18,7 @@ class TestWorld:
             self.args = args
         self.conv_length = self.args.get('length_conv_round', config.CONV_LENGTH)
         self.amount_convs = self.args.get('amount_convs', config.AMOUNT_CONVS)
-        self.report = []
+        self.test_manager = None
         self.conversations = []
         self.conv_starter = self.args.get('conv_starter')
         config.GENERATE_DIALOGUE = self.args.get("gen_dialog")
@@ -46,6 +47,10 @@ class TestWorld:
                             help="Testee: testee initiates every conversation. Conv-partner: the conversation partner "
                                  "initiates all conversations. Not specified: 50-50 per conversation who starts that "
                                  "conversation.")
+        parser.add_argument('-rf', '--read-file', metavar='', type=str, default='',
+                            help="The path to the file you want to read into the script. Interprets the last three"
+                                 "letters to interpret what file type it is. No input is interpreted as such the script"
+                                 "generates conversations using the GDMs. Currently only .txt-files are supported. ")
 
     def init_conversations(self):
         """ Initiates the conversation. Aims to have a consistent conversation partner conv_partner, with whom each of
@@ -57,9 +62,21 @@ class TestWorld:
             for j in range(self.amount_convs):
                 conv = conv.initiate_conversation(self.conv_length)
                 self.conversations.append(conv)
-        print(self.conversations)
 
-    def init_tests(self, conversations):
+    def init_tests(self):
         """ Initiates the evaluation of the conversations produced. """
-        pass
+        self.test_manager = TestManager(conversations=self.conversations)
+        self.test_manager.init_tests()
 
+    def present_results(self):
+        print(self.test_manager)
+
+    def read_file(self, file_path: str, file_type: str) -> Conversation:
+        """ Work in progress to make it possible to read files, as to be able to assess conversations from outside the
+        script."""
+        conv = Conversation(testee=self.testees[0], conv_partner=self.conv_partner)
+        if file_type == ".txt":
+            with open(file_path) as f:
+                lines = f.readlines()
+                conv.conv_from_file(lines=lines)
+        return conv
