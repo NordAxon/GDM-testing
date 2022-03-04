@@ -1,0 +1,4 @@
+torch
+torchaudio
+torchvision
+transformers~=4.17.0.dev0
