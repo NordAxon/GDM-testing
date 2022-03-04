@@ -72,7 +72,7 @@ class Conversation:
         """ Method for converting the list of Messages into a list of strings, so that it is printable. """
         stringified_messages = []
         for elem in self.messages:
-            stringified_messages.append(elem.__str__())
+            stringified_messages.append(str(elem))
         return stringified_messages
 
     def get_messages(self):
