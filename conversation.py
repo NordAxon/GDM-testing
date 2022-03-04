@@ -36,6 +36,9 @@ class Conversation:
         else:
             self.whos_turn = conv_partner
 
+    def __iter__(self):
+        return iter(self.messages)
+
     def initiate_conversation(self, conv_length):
         """ Function for running one conversation between testee and conv_partner. The function lets every GDM produce
             conv_length responses with regards to the conversation and last response produced. The messages produced are
@@ -58,7 +61,7 @@ class Conversation:
         else:
             message = Message(self.whos_turn.act(self.str_conversation()), self.whos_turn.get_id(),
                               role=self.whos_turn.get_role())
-        print("{}: {}".format(self.whos_turn.get_role(), message.__str__())) if config.VERBOSE else print()
+        print("{}: {}".format(self.whos_turn.get_role(), str(message))) if config.VERBOSE else print()
         return message
 
     def switch_turn(self):
@@ -96,4 +99,8 @@ class Message:
     def __str__(self):
         """ Stringifies a message. That is, it turns a Message into a printable string. """
         return self.message
+
+    def get_role(self):
+        """ Function for returning the role of the GDM who produced self. Returns either 'Testee' or 'Other agent'. """
+        return self.role
 
