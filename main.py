@@ -6,12 +6,12 @@ import worlds
 def debug_script_setup():
     """ If Config.DEBUG is True, the following settings are used for setting up the script. """
     args = {}
-    args['length_conv_round'] = 3
-    args['amount_convs'] = 2
-    args['conv_partner'] = 'Blenderbot90m'
-    args['tested_gdms'] = 'Blenderbot90m'
-    args['gen_dialog'] = True
-    args['conv_starter'] = ""
+    args['length_conv_round'] = config.CONV_LENGTH
+    args['amount_convs'] = config.AMOUNT_CONVS
+    args['conv_partner'] = config.CONV_PARTNER
+    args['tested_gdms'] = config.TESTEE
+    args['gen_dialog'] = config.GENERATE_DIALOGUE
+    args['conv_starter'] = config.CONV_STARTER
     return args
 
 

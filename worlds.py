@@ -65,11 +65,12 @@ class TestWorld:
 
     def init_tests(self):
         """ Initiates the evaluation of the conversations produced. """
-        self.test_manager = TestManager(conversations=self.conversations)
+        self.test_manager = TestManager(list_testees=self.testees, conversations=self.conversations)
         self.test_manager.init_tests()
 
     def present_results(self):
-        print(self.test_manager)
+        self.test_manager.present_results()
+        pass
 
     def read_file(self, file_path: str, file_type: str) -> Conversation:
         """ Work in progress to make it possible to read files, as to be able to assess conversations from outside the

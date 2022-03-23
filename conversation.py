@@ -15,7 +15,7 @@ class Conversation:
 
     def __init__(self, testee, conv_partner, conv_starter=None):
         self.messages = []
-        self.whos_turn = ""
+        self.whose_turn = ""
         self.testee = testee
         self.conv_partner = conv_partner
 
@@ -23,18 +23,24 @@ class Conversation:
         if config.RANDOM_CONV_START:
             conversation_start = 'Hi, '
             self.messages.append(Message(generate_random_text(conversation_start), 'generator', 'generator'))
-            print("{}: {}".format('Generated starter', self.messages[0].__str__()))
+            print("{}: {}".format('Generated starter', str(self.messages[0])))
 
         """ If conv_starter is specified from the CLI, conv_starter is not None and the starter is set according to the
                 conv_starter. If it is none, it is randomized with 50/50 probability if testee or conv_partner starts. """
         if conv_starter.lower() == "testee":
-            self.whos_turn = testee
+            self.whose_turn = testee
         elif conv_starter.lower() == "conv_partner":
-            self.whos_turn = conv_partner
+            self.whose_turn = conv_partner
         elif random.randint(0, 1) == 0:
-            self.whos_turn = testee
+            self.whose_turn = testee
         else:
-            self.whos_turn = conv_partner
+            self.whose_turn = conv_partner
+
+    def __getitem__(self, item):
+        return self.messages[item]
+
+    def __len__(self):
+        return len(self.messages)
 
     def __iter__(self):
         return iter(self.messages)
@@ -57,16 +63,17 @@ class Conversation:
         override the normal generate response procedure, and take its place."""
 
         if injected_sent is not None:
-            message = Message(message=injected_sent, agent_id=self.whos_turn.get_id(), role=self.whos_turn.get_role())
+            message = Message(message=injected_sent, agent_id=self.whose_turn.get_id(), role=self.whose_turn.get_role())
         else:
-            message = Message(self.whos_turn.act(self.str_conversation()), self.whos_turn.get_id(),
-                              role=self.whos_turn.get_role())
-        print("{}: {}".format(self.whos_turn.get_role(), str(message))) if config.VERBOSE else print()
+            message = Message(self.whose_turn.act(self.str_conversation()), self.whose_turn.get_id(),
+                              role=self.whose_turn.get_role())
+        print("{}: {}".format(self.whose_turn.get_role(), str(message))) if config.VERBOSE else print()
         return message
 
     def switch_turn(self):
         """ Function for switching the turn to the agent that did not produce the last response. """
-        self.whos_turn = self.testee if self.whos_turn.get_id() == self.conv_partner.get_id() else self.conv_partner
+        self.whose_turn = self.testee if self.whose_turn.get_role() == self.conv_partner.get_role() \
+            else self.conv_partner
 
     def str_conversation(self):
         """ Method for converting the list of Messages into a list of strings, so that it is printable. """
@@ -82,6 +89,9 @@ class Conversation:
     def conv_from_file(self, lines):
         for i in range(len(lines)):
             self.messages[i] = lines[i]
+
+    def get_testee_id(self):
+        return self.testee.get_id()
 
 
 class Message:

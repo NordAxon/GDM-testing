@@ -1,5 +1,4 @@
 import abc
-import uuid
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, BlenderbotForConditionalGeneration, BlenderbotTokenizer
 from conversation import Message, Conversation
 
@@ -8,9 +7,9 @@ class AbstractAgent(abc.ABC):
     """ Abstract base class that defines the interface for a conversational agent. """
 
     @abc.abstractmethod
-    def __init__(self, role='Other agent'):
+    def __init__(self, agent_id, role='Other agent'):
         """ Make sure to start the server on which you run your GDM, should you have any. """
-        self.agent_id = uuid.uuid4()
+        self.agent_id = agent_id
         self.role = role
 
     @abc.abstractmethod
@@ -34,8 +33,8 @@ class Human(AbstractAgent):
     """ Conversational agent where a human is involved. You need to be present at the keyboard for this to work, as it
      is you who talk with the other agent. """
 
-    def __init__(self):
-        AbstractAgent.__init__()
+    def __init__(self, agent_id):
+        AbstractAgent.__init__(agent_id=agent_id)
 
     def act(self, conversation):
         response = input("You: ")
@@ -45,8 +44,8 @@ class Human(AbstractAgent):
 class BlenderBot400M(AbstractAgent):
     """ BlenderBot's 400M model as a conversational agent. """
 
-    def __init__(self, role='Other agent'):
-        AbstractAgent.__init__(self, role=role)
+    def __init__(self, agent_id, role='Other agent'):
+        AbstractAgent.__init__(self, agent_id=agent_id, role=role)
         self.name = 'facebook/blenderbot-400M-distill'
         self.model = BlenderbotForConditionalGeneration.from_pretrained(self.name)
         self.tokenizer = BlenderbotTokenizer.from_pretrained(self.name)
@@ -72,8 +71,8 @@ class BlenderBot400M(AbstractAgent):
 class BlenderBot90M(AbstractAgent):
     """ Blenderbot's 90M model as a conversational agent. """
 
-    def __init__(self, role='Other agent'):
-        AbstractAgent.__init__(self, role=role)
+    def __init__(self, agent_id, role='Other agent'):
+        AbstractAgent.__init__(self, agent_id=agent_id, role=role)
         self.name = 'facebook/blenderbot_small-90M'
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.name)
         self.tokenizer = AutoTokenizer.from_pretrained(self.name)
@@ -104,5 +103,5 @@ def load_conv_agent(agents, role='Other agent'):
     agents = agents.split(',')
     list_conv_agents = []
     for agent in agents:
-        list_conv_agents.append(available_agents[agent](role=role))
+        list_conv_agents.append(available_agents[agent](agent_id=agent, role=role))
     return list_conv_agents
