@@ -103,7 +103,8 @@ class VocabularySizeTest(AbstractConvTest, ABC):
             word_array = str(elem).split()
             for word in word_array:
                 """ Removes tokens defined in the constructor from strings, and if the word is defined in the 
-                                constructor as an "excluded" word, it is not counted. """
+
+                constructor as an "excluded" word, it is not counted. """
                 if word[-1] in self.excluded_words_tokens['tokens']:
                     word = word[:-1]
                 if word in self.excluded_words_tokens['words']:
