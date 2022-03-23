@@ -58,10 +58,14 @@ class TestWorld:
         conversations that will then be evaluated and pose the grounds for evaluation and examination. """
         for i in range(len(self.testees)):
             testee = self.testees[i]
-            conv = Conversation(testee=testee, conv_partner=self.conv_partner, conv_starter=self.conv_starter)
             for j in range(self.amount_convs):
+                if config.DEBUG_MODE:
+                    print("Initiates conversation {}".format(j + 1))
+                conv = Conversation(testee=testee, conv_partner=self.conv_partner, conv_starter=self.conv_starter)
                 conv = conv.initiate_conversation(self.conv_length)
                 self.conversations.append(conv)
+                if config.DEBUG_MODE:
+                    print("Ends conversation {}".format(j + 1))
 
     def init_tests(self):
         """ Initiates the evaluation of the conversations produced. """
