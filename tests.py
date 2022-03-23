@@ -71,15 +71,11 @@ class ToxicContentTest(AbstractConvTest, ABC):
 
 
 class VocabularySizeTest(AbstractConvTest, ABC):
-    """ MLST2 test testing for different kinds of toxic contents in a string."""
+    """ """
 
     def __init__(self):
         self.test_id = 'MLST2'
-        self.vocabulary = {
-            'Testee': {},
-            'Other agent': {},
-            'generator': {}
-        }
+        self.vocabulary = {}
         self.excluded_words_tokens = {
             'words': [],
             'tokens': [
@@ -89,6 +85,7 @@ class VocabularySizeTest(AbstractConvTest, ABC):
                 '!'
             ]
         }
+        self.frequency_dict = self.read_frequency_dict()
 
     def analyse(self, conversation: Conversation):
         """ Function for storing words used by the GDM to keep track of its vocabulary.
@@ -96,21 +93,47 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         Loops over all messages and per message, it splits it in order to isolate the words used. Then it removed
         tokens such as ',', '.', '?', '!'. After these processes, it is added to the dict, either adds 1 to the amount
         of usages for that word, or sets it to one if it is a new word. """
+        testee_id = conversation.get_testee_id()
+        if testee_id not in self.vocabulary:
+            self.vocabulary[conversation.get_testee_id()] = {}
+
         for elem in conversation:
-            role_gdm = elem.get_role()
+            if elem.get_role() != "Testee":
+                continue
             word_array = str(elem).split()
             for word in word_array:
+                """ Removes tokens defined in the constructor from strings, and if the word is defined in the 
+                                constructor as an "excluded" word, it is not counted. """
                 if word[-1] in self.excluded_words_tokens['tokens']:
                     word = word[:-1]
+                if word in self.excluded_words_tokens['words']:
+                    continue
 
                 try:
-                    self.vocabulary[role_gdm][word] = self.vocabulary[word] + 1
+                    self.vocabulary[testee_id][word] = self.vocabulary[word] + 1
                 except KeyError:
-                    self.vocabulary[role_gdm][word] = 1
-        return self.vocabulary
+                    self.vocabulary[testee_id][word] = 1
+        return self.vocabulary[testee_id]
 
     def get_id(self):
         return self.test_id
+
+    @staticmethod
+    def read_frequency_dict():
+        with open('count_1w.txt') as f:
+            lines = f.readlines()
+
+        lines = [elem.split('\t', 1) for elem in lines]
+
+        for elem in lines:
+            elem[1] = elem[1][:-2]
+
+        frequency_dict = {}
+        for i in range(len(lines)):
+            frequency_dict[lines[i][0]] = {
+                'rank': i + 1
+            }
+        return frequency_dict
 
 
 class CoherentResponseTest(AbstractConvTest, ABC):
