@@ -81,7 +81,7 @@ class BlenderBot90M(AbstractAgent):
         self.chat_memory = 6
 
     def act(self, messages):
-        conv_string = '.'.join(elem for elem in messages[-self.chat_memory:])
+        conv_string = '\n'.join(elem for elem in messages[-self.chat_memory:])
         inputs = self.tokenizer([conv_string], return_tensors='pt')
         reply_ids = self.model.generate(**inputs)
         response = self.tokenizer.batch_decode(reply_ids, skip_special_tokens=True)[0]

@@ -1,9 +1,9 @@
 DEBUG_MODE = True
 VERBOSE = True
 RANDOM_CONV_START = True
-CONV_LENGTH = 5
-AMOUNT_CONVS = 1
+CONV_LENGTH = 8
+AMOUNT_CONVS = 2
 CONV_PARTNER = 'blenderbot90m'
-TESTEE = 'blenderbot90m'
+TESTEE = 'blenderbot400m,blenderbot90m'
 GENERATE_DIALOGUE = True
 CONV_STARTER = ""

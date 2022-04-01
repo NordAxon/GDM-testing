@@ -50,7 +50,8 @@ class TestWorld:
         parser.add_argument('-rf', '--read-file', metavar='', type=str, default='',
                             help="The path to the file you want to read into the script. Interprets the last three"
                                  "letters to interpret what file type it is. No input is interpreted as such the script"
-                                 "generates conversations using the GDMs. Currently only .txt-files are supported. ")
+                                 "generates conversations using the GDMs. Currently only miscellaneous .txt-files are"
+                                 "supported. ")
 
     def init_conversations(self):
         """ Initiates the conversation. Aims to have a consistent conversation partner conv_partner, with whom each of

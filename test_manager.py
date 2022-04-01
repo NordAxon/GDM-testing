@@ -4,8 +4,9 @@ import copy
 implemented_tests = {
     'static_tests': {
         'MLST7': tests.ToxicContentTest,
+        'MLST4': tests.CoherentResponseTest,
         'MLST2': tests.VocabularySizeTest,
-        'MLST4': tests.CoherentResponseTest
+        'MLSTX': tests.ReadabilityIndexTest
     },
     'injected_tests': {
 
@@ -18,7 +19,7 @@ class TestManager:
     def __init__(self, list_testees, conversations):
         self.test_results = {}
         self.conversations = conversations
-        self.setup_test_manager(list_testees=list_testees)
+        #self.setup_test_manager(list_testees=list_testees)
 
     def setup_test_manager(self, list_testees):
         list_keys_static = list(implemented_tests['static_tests'].keys())
@@ -39,10 +40,7 @@ class TestManager:
     def init_static_tests(self):
         for elem in implemented_tests['static_tests']:
             test_case = implemented_tests['static_tests'][elem]()
-            for i in range(len(self.conversations)):
-                conv = self.conversations[i]
-                results = test_case.analyse(conv)
-                self.test_results[conv.get_testee_id()]['static_tests'][elem]['Conv{}'.format(i + 1)] = results
+            self.test_results[elem] = test_case.analyse_conversations(self.conversations)
 
     def init_injected_tests(self):
         for elem in implemented_tests['injected_tests']:
