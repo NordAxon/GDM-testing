@@ -55,10 +55,10 @@ class AbstractConvTest(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def analyse(self, conversation: Conversation):
+    def analyse(self, conv: Conversation):
         """Analyses the conversation
         Args:
-            conversation (Conversation): Conversation to analyse
+            conv (Conversation): Conversation to analyse
         Returns:
             Dict: Dictionary with metrics produced by test
         """
@@ -67,12 +67,6 @@ class AbstractConvTest(abc.ABC):
 
 # ----------------------- Conversation tests
 """ Below are the implemented conversation tests. """
-
-
-# for i in range(len(self.conversations)):
-#     conv = self.conversations[i]
-#     results = test_case.analyse(conv)
-#     self.test_results[conv.get_testee_id()]['static_tests'][elem]['Conv{}'.format(i + 1)] = results
 
 
 class ToxicContentTest(AbstractConvTest, ABC):
@@ -230,13 +224,13 @@ class CoherentResponseTest(AbstractConvTest, ABC):
                 result_dict[conv.get_testee_id()]['Conversations']['Conv{}'.format(i + 1)] = results
         return result_dict
 
-    def analyse(self, conversation: Conversation):
+    def analyse(self, conv: Conversation):
         results = list()
-        for i in range(1, len(conversation)):
-            elem = conversation[i]
+        for i in range(1, len(conv)):
+            elem = conv[i]
             if elem.get_role() == 'Testee':
                 result = {}
-                prev_string = str(conversation[i - 1])
+                prev_string = str(conv[i - 1])
                 testee_string = str(elem)
                 next_sent_prediction = self.next_sent_prediction(string1=prev_string, string2=testee_string)
                 result['Previous message'] = str(prev_string)
@@ -260,10 +254,10 @@ class CoherentResponseTest(AbstractConvTest, ABC):
 
 
 class ReadabilityIndexTest(AbstractConvTest, ABC):
-    """ MLSTX test testing for readability."""
+    """ MLST2TC2 test testing for readability."""
 
     def __init__(self):
-        self.test_id = 'MLSTX'
+        self.test_id = 'MLST2TC2'
         self.excluded_tokens = conversation.set_of_excluded_tokens()
 
     def analyse_conversations(self, conversations: list):

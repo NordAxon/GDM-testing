@@ -1,12 +1,13 @@
 import tests
-import copy
+import os
+import sqlite3
 
 implemented_tests = {
     'static_tests': {
         'MLST7': tests.ToxicContentTest,
         'MLST4': tests.CoherentResponseTest,
         'MLST2': tests.VocabularySizeTest,
-        'MLSTX': tests.ReadabilityIndexTest
+        'MLST2TC2': tests.ReadabilityIndexTest
     },
     'injected_tests': {
 
@@ -19,19 +20,7 @@ class TestManager:
     def __init__(self, list_testees, conversations):
         self.test_results = {}
         self.conversations = conversations
-        #self.setup_test_manager(list_testees=list_testees)
-
-    def setup_test_manager(self, list_testees):
-        list_keys_static = list(implemented_tests['static_tests'].keys())
-        list_keys_injected = list(implemented_tests['injected_tests'].keys())
-        for elem in list_testees:
-            self.test_results[elem.get_id()] = copy.deepcopy(implemented_tests)
-
-            for test_case in list_keys_static:
-                self.test_results[elem.get_id()]['static_tests'][test_case] = {}
-
-            for test_case in list_keys_injected:
-                self.test_results[elem.get_id()]['injected_tests'][test_case] = {}
+        self.testees = list_testees
 
     def init_tests(self):
         self.init_static_tests()
@@ -49,3 +38,13 @@ class TestManager:
 
     def present_results(self):
         print(self.test_results)
+
+        for elem in implemented_tests['static_tests']:
+            test_case = self.test_results[elem]
+
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(base_dir, "test_results.sqlite")
+conn = sqlite3.connect(db_path)
+
+
