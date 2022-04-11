@@ -1,4 +1,6 @@
 import abc
+import datetime
+import sqlite3
 from abc import ABC
 
 from numpy import exp
@@ -8,6 +10,8 @@ from detoxify import Detoxify
 from transformers import BertTokenizer, BertForNextSentencePrediction
 from collections import Counter
 
+import aux_functions
+import config
 import contractions
 import conversation
 from conversation import Conversation, Message
@@ -64,6 +68,11 @@ class AbstractConvTest(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
+    def present(self):
+        """ Specify how the results should be extracted. E.g. to a .csv-file or to a .sqlite-file. """
+        pass
+
 
 # ----------------------- Conversation tests
 """ Below are the implemented conversation tests. """
@@ -76,27 +85,69 @@ class ToxicContentTest(AbstractConvTest, ABC):
         self.test_id = 'MLST7'
         self.detoxify = Detoxify('original', device='cuda') if torch.cuda.is_available() else \
             Detoxify('original', device='cpu')
+        self.result_dict = {}
 
     def analyse_conversations(self, conversations: list):
-        result_dict = {}
         for i in range(len(conversations)):
             conv = conversations[i]
             results = self.analyse(conv)
 
             try:
-                result_dict[conv.get_testee_id()]['Conversations']['Conv{}'.format(i + 1)] = results
+                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
             except KeyError:
-                result_dict[conv.get_testee_id()] = {}
-                result_dict[conv.get_testee_id()]['Conversations'] = {}
-                result_dict[conv.get_testee_id()]['Conversations']['Conv{}'.format(i + 1)] = results
-        return result_dict
+                self.result_dict[conv.get_testee_id()] = {}
+                self.result_dict[conv.get_testee_id()]['Conversations'] = {}
+                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
+        return self.result_dict
 
-    def analyse(self, conversation: Conversation):
-        results = self.detoxify.predict(conversation.str_conversation())
+    def analyse(self, conv: Conversation):
+        results = self.detoxify.predict(conv.filter_testee_mgs())
         return results
 
     def get_id(self):
         return self.test_id
+
+    def present(self):
+        if config.PRESENTATION_WAY == "sqlite":
+            self.present_through_sqlite()
+
+    def present_through_sqlite(self):
+        for gdm_id in list(self.result_dict.keys()):
+            date_time = datetime.datetime.now()
+            cursor = aux_functions.conn.cursor()
+            test_id = "{}:{}:{}".format(gdm_id, self.test_id, date_time)
+            try:
+                cursor.execute(
+                    """
+                    INSERT
+                    INTO MLST(test_id, gdm_id, date_time_run)
+                    VALUES (?, ?, ?);
+                    """,
+                    [test_id, gdm_id, date_time]
+                )
+                # Successful insert
+                aux_functions.conn.commit()
+            except sqlite3.Error as er:
+                # Failed insert.
+                print("Error occurred while inserting into MLST-table. Error was {}.".format(er))
+            for conv_nbr in self.result_dict[gdm_id]['Conversations']:
+                for toxic_type in self.result_dict[gdm_id]['Conversations'][conv_nbr]:
+                    for toxic_val in self.result_dict[gdm_id]['Conversations'][conv_nbr][toxic_type]:
+                        cursor = aux_functions.conn.cursor()
+                        try:
+                            cursor.execute(
+                                """
+                                INSERT
+                                INTO MLST7_results(test_id, conv_nbr, toxicity_type, toxicity_level)
+                                VALUES (?, ?, ?, ?);
+                                """,
+                                [test_id, conv_nbr, toxic_type, toxic_val]
+                            )
+                            # Successful insert
+                            aux_functions.conn.commit()
+                        except sqlite3.Error as er:
+                            # Failed insert.
+                            print(er)
 
 
 class VocabularySizeTest(AbstractConvTest, ABC):
@@ -109,6 +160,7 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         self.excluded_tokens = conversation.set_of_excluded_tokens()
         self.contractions = self.specify_contractions()
         self.frequency_dict = self.read_frequency_dict()
+        self.result_dict = {}
 
     @staticmethod
     def specify_contractions():
@@ -132,18 +184,17 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         return frequency_dict
 
     def analyse_conversations(self, conversations: list):
-        result_dict = {}
         for i in range(len(conversations)):
             conv = conversations[i]
             results = self.analyse(conv)
 
             try:
-                result_dict[conv.get_testee_id()]['Conversations']['Conv{}'.format(i + 1)] = results
+                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
             except KeyError:
-                result_dict[conv.get_testee_id()] = {}
-                result_dict[conv.get_testee_id()]['Conversations'] = {}
-                result_dict[conv.get_testee_id()]['Conversations']['Conv{}'.format(i + 1)] = results
-        return result_dict
+                self.result_dict[conv.get_testee_id()] = {}
+                self.result_dict[conv.get_testee_id()]['Conversations'] = {}
+                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
+        return self.result_dict
 
     def analyse(self, conv: Conversation):
         """ Function for storing words used by the GDM to keep track of its vocabulary.
@@ -155,7 +206,8 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         if testee_id not in self.vocabulary:
             self.vocabulary[testee_id] = {
                 'word_counter': Counter(),
-                'frequency_word_list': {'non_frequent_words': {}}
+                'frequency_word_list': {},
+                'non_frequent_words': {}
             }
 
         for elem in conv:
@@ -181,10 +233,10 @@ class VocabularySizeTest(AbstractConvTest, ABC):
                         self.vocabulary[testee_id]['frequency_word_list'][self.frequency_dict[word_elem]['rank']] = \
                             self.vocabulary[testee_id]['word_counter'][word_elem]
                     except KeyError:
-                        if word_elem in self.vocabulary[testee_id]['frequency_word_list']['non_frequent_words']:
-                            self.vocabulary[testee_id]['frequency_word_list']['non_frequent_words'][word_elem] += 1
+                        if word_elem in self.vocabulary[testee_id]['non_frequent_words']:
+                            self.vocabulary[testee_id]['non_frequent_words'][word_elem] += 1
                         else:
-                            self.vocabulary[testee_id]['frequency_word_list']['non_frequent_words'][word_elem] = 1
+                            self.vocabulary[testee_id]['non_frequent_words'][word_elem] = 1
         return self.vocabulary[testee_id]
 
     def get_id(self):
@@ -200,6 +252,84 @@ class VocabularySizeTest(AbstractConvTest, ABC):
             word_array = sentence_array[0].split()
         return word_array
 
+    def present(self):
+        if config.PRESENTATION_WAY == "sqlite":
+            self.present_through_sqlite()
+
+    def present_through_sqlite(self):
+        for gdm_id in list(self.result_dict.keys()):
+            date_time = datetime.datetime.now()
+            cursor = aux_functions.conn.cursor()
+            test_id = "{}:{}:{}".format(gdm_id, self.test_id, date_time)
+            try:
+                cursor.execute(
+                    """
+                    INSERT
+                    INTO MLST(test_id, gdm_id, date_time_run)
+                    VALUES (?, ?, ?);
+                    """,
+                    [test_id, gdm_id, date_time]
+                )
+                # Successful insert
+                aux_functions.conn.commit()
+            except sqlite3.Error as er:
+                # Failed insert.
+                print("Error occurred while inserting into MLST-table. Error was {}.".format(er))
+            for conv_nbr in self.result_dict[gdm_id]['Conversations']:
+                for word in self.result_dict[gdm_id]['Conversations'][conv_nbr]['word_counter']:
+                    cursor = aux_functions.conn.cursor()
+                    try:
+                        cursor.execute(
+                            """
+                            INSERT
+                            INTO MLST2_word_counter(test_id, conv_nbr, word, frequency)
+                            VALUES (?, ?, ?, ?);
+                            """,
+                            [test_id, conv_nbr, word,
+                             self.result_dict[gdm_id]['Conversations'][conv_nbr]['word_counter'][word]]
+                        )
+                        # Successful insert
+                        aux_functions.conn.commit()
+                    except sqlite3.Error as er:
+                        # Failed insert.
+                        print(er)
+
+                for word_rank in self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list']:
+                    cursor = aux_functions.conn.cursor()
+                    try:
+                        cursor.execute(
+                            """
+                            INSERT
+                            INTO MLST2_frequency_list(test_id, conv_nbr, word_rank, frequency)
+                            VALUES (?, ?, ?, ?);
+                            """,
+                            [test_id, conv_nbr, word_rank,
+                             self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list'][word_rank]]
+                        )
+                        # Successful insert
+                        aux_functions.conn.commit()
+                    except sqlite3.Error as er:
+                        # Failed insert.
+                        print(er)
+
+                for non_freq_word in self.result_dict[gdm_id]['Conversations'][conv_nbr]['non_frequent_words']:
+                    cursor = aux_functions.conn.cursor()
+                    try:
+                        cursor.execute(
+                            """
+                            INSERT
+                            INTO MLST2_non_frequent_list(test_id, conv_nbr, word, frequency)
+                            VALUES (?, ?, ?, ?);
+                            """,
+                            [test_id, conv_nbr, non_freq_word,
+                             self.result_dict[gdm_id]['Conversations'][conv_nbr]['non_frequent_words'][non_freq_word]]
+                        )
+                        # Successful insert
+                        aux_functions.conn.commit()
+                    except sqlite3.Error as er:
+                        # Failed insert.
+                        print(er)
+
 
 class CoherentResponseTest(AbstractConvTest, ABC):
     """ MLST4 test testing for coherence between two responses."""
@@ -209,20 +339,20 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         self.bert_type = 'bert-base-uncased'
         self.bert_tokenizer = BertTokenizer.from_pretrained(self.bert_type)
         self.bert_model = BertForNextSentencePrediction.from_pretrained(self.bert_type)
+        self.result_dict = {}
 
     def analyse_conversations(self, conversations: list):
-        result_dict = {}
         for i in range(len(conversations)):
             conv = conversations[i]
             results = self.analyse(conv)
 
             try:
-                result_dict[conv.get_testee_id()]['Conversations']['Conv{}'.format(i + 1)] = results
+                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
             except KeyError:
-                result_dict[conv.get_testee_id()] = {}
-                result_dict[conv.get_testee_id()]['Conversations'] = {}
-                result_dict[conv.get_testee_id()]['Conversations']['Conv{}'.format(i + 1)] = results
-        return result_dict
+                self.result_dict[conv.get_testee_id()] = {}
+                self.result_dict[conv.get_testee_id()]['Conversations'] = {}
+                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
+        return self.result_dict
 
     def analyse(self, conv: Conversation):
         results = list()
@@ -252,6 +382,49 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         e = exp(vector)
         return e / e.sum()
 
+    def present(self):
+        if config.PRESENTATION_WAY == "sqlite":
+            self.present_through_sqlite()
+
+    def present_through_sqlite(self):
+        for gdm_id in list(self.result_dict.keys()):
+            date_time = datetime.datetime.now()
+            cursor = aux_functions.conn.cursor()
+            test_id = "{}:{}:{}".format(gdm_id, self.test_id, date_time)
+            try:
+                cursor.execute(
+                    """
+                    INSERT
+                    INTO MLST(test_id, gdm_id, date_time_run)
+                    VALUES (?, ?, ?);
+                    """,
+                    [test_id, gdm_id, date_time]
+                )
+                # Successful insert
+                aux_functions.conn.commit()
+            except sqlite3.Error as er:
+                # Failed insert.
+                print("Error occurred while inserting into MLST-table. Error was {}.".format(er))
+            for conv_nbr in self.result_dict[gdm_id]['Conversations']:
+                for tested_response_dict in self.result_dict[gdm_id]['Conversations'][conv_nbr]:
+                    cursor = aux_functions.conn.cursor()
+                    try:
+                        cursor.execute(
+                            """
+                            INSERT
+                            INTO MLST4_results(test_id, conv_nbr, prev_msg, testee_message, pos_pred, neg_pred)
+                            VALUES (?, ?, ?, ?, ?, ?);
+                            """,
+                            [test_id, conv_nbr, tested_response_dict['Previous message'],
+                             tested_response_dict['Testee message'], tested_response_dict['NSP-prediction'][0],
+                             tested_response_dict['NSP-prediction'][1]]
+                        )
+                        # Successful insert
+                        aux_functions.conn.commit()
+                    except sqlite3.Error as er:
+                        # Failed insert.
+                        print(er)
+
 
 class ReadabilityIndexTest(AbstractConvTest, ABC):
     """ MLST2TC2 test testing for readability."""
@@ -259,20 +432,20 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
     def __init__(self):
         self.test_id = 'MLST2TC2'
         self.excluded_tokens = conversation.set_of_excluded_tokens()
+        self.result_dict = {}
 
     def analyse_conversations(self, conversations: list):
-        result_dict = {}
         for i in range(len(conversations)):
             conv = conversations[i]
             results = self.analyse(conv)
 
             try:
-                result_dict[conv.get_testee_id()]['Conversations']['Conv{}'.format(i + 1)] = results
+                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
             except KeyError:
-                result_dict[conv.get_testee_id()] = {}
-                result_dict[conv.get_testee_id()]['Conversations'] = {}
-                result_dict[conv.get_testee_id()]['Conversations']['Conv{}'.format(i + 1)] = results
-        return result_dict
+                self.result_dict[conv.get_testee_id()] = {}
+                self.result_dict[conv.get_testee_id()]['Conversations'] = {}
+                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
+        return self.result_dict
 
     def analyse(self, conv: Conversation):
         results = {
@@ -280,12 +453,11 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
             'amount_words': 0,
             'amount_words_grt_6': 0
         }
-        for i in range(len(conv)):
-            elem = conv[i]
-            if elem.get_role() == 'Testee':
-                results['amount_sentences'] += conversation.count_sentences_within_string(str(elem))
-                results['amount_words'] += len(str(elem).split())
-                for word in str(elem).split():
+        for message in conv:
+            if message.get_role() == 'Testee':
+                results['amount_sentences'] += conversation.count_sentences_within_string(str(message))
+                results['amount_words'] += len(str(message).split())
+                for word in str(message).split():
                     word = conversation.clean_from_excluded_tokens(word)
                     if len(word) > 6:
                         results['amount_words_grt_6'] += 1
@@ -295,6 +467,49 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
 
     def get_id(self):
         return self.test_id
+
+    def present(self):
+        if config.PRESENTATION_WAY == "sqlite":
+            self.present_through_sqlite()
+
+    def present_through_sqlite(self):
+        for gdm_id in list(self.result_dict.keys()):
+            date_time = datetime.datetime.now()
+            cursor = aux_functions.conn.cursor()
+            test_id = "{}:{}:{}".format(gdm_id, self.test_id, date_time)
+            try:
+                cursor.execute(
+                    """
+                    INSERT
+                    INTO MLST(test_id, gdm_id, date_time_run)
+                    VALUES (?, ?, ?);
+                    """,
+                    [test_id, gdm_id, date_time]
+                )
+                # Successful insert
+                aux_functions.conn.commit()
+            except sqlite3.Error as er:
+                # Failed insert.
+                print("Error occurred while inserting into MLST7-table. Error was {}.".format(er))
+            for conv_nbr in self.result_dict[gdm_id]['Conversations']:
+                cursor = aux_functions.conn.cursor()
+                conv = self.result_dict[gdm_id]['Conversations'][conv_nbr]
+                try:
+                    cursor.execute(
+                        """
+                        INSERT
+                        INTO MLST2TC2_results(test_id, conv_nbr, amount_sents, amount_words, amount_words_grt_6,
+                         readab_index)
+                        VALUES (?, ?, ?, ?, ?, ?);
+                        """,
+                        [test_id, conv_nbr, conv['amount_sentences'], conv['amount_words'], conv['amount_words_grt_6'],
+                         conv['readability_index']]
+                    )
+                    # Successful insert
+                    aux_functions.conn.commit()
+                except sqlite3.Error as er:
+                    # Failed insert.
+                    print(er)
 
 
 # ----------------------- Injected tests

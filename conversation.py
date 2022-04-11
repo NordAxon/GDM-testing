@@ -123,6 +123,15 @@ class Conversation:
     def get_testee_id(self):
         return self.testee.get_id()
 
+    def filter_testee_mgs(self):
+        """ Method for converting the list of Messages into a stringifed list of only the messages belonging to the
+        Testee, as to evaluate only these messages, should it be necessary. """
+        stringified_messages = []
+        for elem in self.messages:
+            if elem.get_role() == "Testee":
+                stringified_messages.append(str(elem))
+        return stringified_messages
+
 
 class Message:
     """ Class for controlling the properties of every Message"""
