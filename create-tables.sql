@@ -79,21 +79,3 @@ CREATE TABLE MLST2TC2_results (
     readab_index        DOUBLE NOT NULL,
     FOREIGN KEY         (test_id) REFERENCES MLST(test_id)
 );
-
-
-/* INSERT 
-INTO GDMs(gdm_id)
-VALUES ('Aida'),
-        ('Emely');
-
-INSERT
-INTO MLST7(test_id, gdm_id, date_time_run)
-VALUES ('1', 'Aida', '2022-04-05 12:58:10'),
-        ('2', 'Emely', '2022-04-05 12:58:11');
-
-INSERT
-INTO MLST7_results(test_id, conv_nbr, toxicity_type, toxicity_level)
-VALUES ('1', 1, 'Toxicity', 0.5),
-        ('1', 2, 'Toxicity', 0.3),
-        ('2', 1, 'Toxicity', 0.8),
-        ('2', 2, 'Toxicity', 0.9); */

@@ -6,13 +6,15 @@ import config
 def generate_random_text():
     """ Sets up a text generator for initiating conversations randomly. Returns a randomized string starting with
     start_str """
+
+    # Reads conversation starters from the conv-starters.txt-file and samples one from them randomly.
     with open('miscellaneous .txt-files/conv-starters.txt') as f:
         lines = f.readlines()
 
     start_str = random.sample(lines, 1)[0].split('\n')[0]
     generator = pipeline('text-generation', model='gpt2')
     generated_response = generator(start_str, max_length=30, num_return_sequences=1)[0]['generated_text']
-    generated_response = generated_response.replace("\n", "")
+    generated_response = generated_response.replace("\n", " ")
     return generated_response
 
 
@@ -117,19 +119,21 @@ class Conversation:
         return self.messages
 
     def conv_from_file(self, lines):
+        """ Work in progress. """
         for i in range(len(lines)):
             self.messages[i] = lines[i]
 
     def get_testee_id(self):
+        """ Returns the ID of the testee for self (the Conversation-object self). """
         return self.testee.get_id()
 
     def filter_testee_mgs(self):
         """ Method for converting the list of Messages into a stringifed list of only the messages belonging to the
         Testee, as to evaluate only these messages, should it be necessary. """
         stringified_messages = []
-        for elem in self.messages:
-            if elem.get_role() == "Testee":
-                stringified_messages.append(str(elem))
+        for message in self.messages:
+            if message.get_role() == "Testee":
+                stringified_messages.append(str(message))
         return stringified_messages
 
 

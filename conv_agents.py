@@ -1,4 +1,5 @@
 import abc
+import requests
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, BlenderbotForConditionalGeneration, BlenderbotTokenizer
 from conversation import Message, Conversation
 
@@ -54,6 +55,7 @@ class BlenderBot400M(AbstractAgent):
         self.chat_memory = 3
 
     def act(self, messages):
+        """ Method for producing a response from the Blenderbot400M-model. """
         conv_string = self.__array2blenderstring(messages[-self.chat_memory:])
         if len(conv_string) > 128:
             conv_string = conv_string[-128:]
@@ -63,6 +65,8 @@ class BlenderBot400M(AbstractAgent):
         return response
 
     def __array2blenderstring(self, conversation):
+        """ Method for inserting the response-separator, as to assist Blenderbot400m in distinguishing what message
+        belongs to what GDM. """
         conv_string = ' '.join([str(elem) + '</s> <s>' for elem in conversation])
         conv_string = conv_string[:len(conv_string) - 8]
         return conv_string
@@ -81,10 +85,32 @@ class BlenderBot90M(AbstractAgent):
         self.chat_memory = 6
 
     def act(self, messages):
+        """ Method for producing responses from Blenderbot's 90M-model."""
         conv_string = '\n'.join(elem for elem in messages[-self.chat_memory:])
         inputs = self.tokenizer([conv_string], return_tensors='pt')
         reply_ids = self.model.generate(**inputs)
         response = self.tokenizer.batch_decode(reply_ids, skip_special_tokens=True)[0]
+        return response
+
+
+class Emely(AbstractAgent):
+    def __init__(self, agent_id, role='Other agent'):
+        AbstractAgent.__init__(self, agent_id=agent_id, role=role)
+        self.URL = "http://localhost:8080/inference"
+        self.chat_memory = 6
+
+    def act(self, messages):
+        # Inputs the conversation array and outputs a response from Emely
+        conv_string = '\n'.join([str(elem) for elem in messages[-self.chat_memory:]])
+        json_obj = {
+            "accept": "application/json",
+            "Content-Type": "application/json",
+            "text": conv_string
+        }
+        r = requests.post(self.URL, json=json_obj)
+        response = r.json()['text']
+        if len(response) > 128:
+            response = response[0:128]
         return response
 
 
@@ -93,7 +119,8 @@ that instantiate conversational agents. """
 available_agents = {
     'human': Human,
     'blenderbot90m': BlenderBot90M,
-    'blenderbot400m': BlenderBot400M
+    'blenderbot400m': BlenderBot400M,
+    'emely': Emely
 }
 
 

@@ -14,7 +14,7 @@ import aux_functions
 import config
 import contractions
 import conversation
-from conversation import Conversation, Message
+from conversation import Conversation
 
 
 class AbstractTestCase(abc.ABC):
@@ -88,6 +88,9 @@ class ToxicContentTest(AbstractConvTest, ABC):
         self.result_dict = {}
 
     def analyse_conversations(self, conversations: list):
+        """ Method for applying the test case to all the produced conversations. More specifically, it loops over all
+        conversations, applies the analysis to every conversation and then stores the result in a dict which is
+        returned. """
         for i in range(len(conversations)):
             conv = conversations[i]
             results = self.analyse(conv)
@@ -101,17 +104,25 @@ class ToxicContentTest(AbstractConvTest, ABC):
         return self.result_dict
 
     def analyse(self, conv: Conversation):
+        """ Method for applying the detoxifyer to all of testee's messages, and returns the scores."""
         results = self.detoxify.predict(conv.filter_testee_mgs())
         return results
 
     def get_id(self):
+        """ Method for returning the id of this test. """
         return self.test_id
 
     def present(self):
-        if config.PRESENTATION_WAY == "sqlite":
+        """ The way of which the results should be presented through. """
+        if config.EXPORT_CHANNEL == "sqlite":
             self.present_through_sqlite()
 
     def present_through_sqlite(self):
+        """ The method on how to export/present the data using sqlite.
+
+            First, it loops over all the GDMs that have been tested, inserting into MLST that that GDM has been tested,
+            with its corresponding test_id, gdm_id and datetime of the run.
+        """
         for gdm_id in list(self.result_dict.keys()):
             date_time = datetime.datetime.now()
             cursor = aux_functions.conn.cursor()
@@ -130,6 +141,10 @@ class ToxicContentTest(AbstractConvTest, ABC):
             except sqlite3.Error as er:
                 # Failed insert.
                 print("Error occurred while inserting into MLST-table. Error was {}.".format(er))
+
+            """ Secondly, the method loops over all the different conversations. Per conversation, the prediction on
+            seven toxic types have been produced. Thus, it loops over those, and ultimately it loops over all the values
+            per toxicity type, which is the value per message produced. """
             for conv_nbr in self.result_dict[gdm_id]['Conversations']:
                 for toxic_type in self.result_dict[gdm_id]['Conversations'][conv_nbr]:
                     for toxic_val in self.result_dict[gdm_id]['Conversations'][conv_nbr][toxic_type]:
@@ -164,10 +179,13 @@ class VocabularySizeTest(AbstractConvTest, ABC):
 
     @staticmethod
     def specify_contractions():
+        """ Method for specifying/declaring all contractions. That is "it's" = "it is" / "it has" etc."""
         return contractions.contractions
 
     @staticmethod
     def read_frequency_dict():
+        """ Method for setting up the frequency list-dict, which is then used as basis for the whole tests, stating
+        which words that have which rankings. """
         with open('miscellaneous .txt-files/count_1w.txt') as f:
             lines = f.readlines()
 
@@ -184,6 +202,8 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         return frequency_dict
 
     def analyse_conversations(self, conversations: list):
+        """ Analyses all the conversations. Every conversation is analysed and the results are added to the results
+        dict, which is then returned. """
         for i in range(len(conversations)):
             conv = conversations[i]
             results = self.analyse(conv)
@@ -210,24 +230,37 @@ class VocabularySizeTest(AbstractConvTest, ABC):
                 'non_frequent_words': {}
             }
 
-        for elem in conv:
-            if elem.get_role() != "Testee":
+        """ Loops over the messages in the conversation. Per message, it is first checked for whether it belongs to the
+        testee or not. It continues only if it belongs to the testee."""
+        for message in conv:
+            if message.get_role() != "Testee":
                 continue
-            word_array = str(elem).split()
+            word_array = str(message).split()
 
             for word in word_array:
                 """ Removes tokens defined in the constructor from strings, and if the word is defined in the
-                constructor as an "excluded" word, it is not counted. """
+                constructor as an "excluded" word, it is not counted. If it is an contraction, it is prolonged to the 
+                full meaning of the contraction. """
                 word = word.lower()
                 word = conversation.clean_from_excluded_tokens(word)
                 if word in self.excluded_words:
                     continue
+
+                """ If a contraction, its full meaning is found. If no contraction, the word is just inserted into the 
+                list. """
                 if word in self.contractions:
                     word = self.find_contraction(word)
                 else:
                     word = [word]
+
+                """ The one or several words that {word} may contain is counted for and then added to the existing 
+                counter. """
                 counter = Counter(word)
                 self.vocabulary[testee_id]['word_counter'] = self.vocabulary[testee_id]['word_counter'] + counter
+
+                """ Per word that may occur in {word}, the frequency list is also updated. That is the mapping from a 
+                rank to a frequency. If it does not exist in the frequency list, it is added to the non-frequent 
+                words-list, which means that the word did not exist in the current frequency list. """
                 for word_elem in word:
                     try:
                         self.vocabulary[testee_id]['frequency_word_list'][self.frequency_dict[word_elem]['rank']] = \
@@ -240,9 +273,12 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         return self.vocabulary[testee_id]
 
     def get_id(self):
+        """ Returns the ID of this test. """
         return self.test_id
 
     def find_contraction(self, word):
+        """ Whenever a word is a contraction, this method finds its full meaning, which may be one or several
+        expressions. """
         sentence_array = self.contractions[word].split('/')
         word_array = []
         if len(sentence_array) > 1:
@@ -253,10 +289,13 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         return word_array
 
     def present(self):
-        if config.PRESENTATION_WAY == "sqlite":
+        """ Method for presenting the results. """
+        if config.EXPORT_CHANNEL == "sqlite":
             self.present_through_sqlite()
 
     def present_through_sqlite(self):
+        """ Method for specifying how to export/present the results. Loops over the GDMs and per GDM transfers the
+        test results into the sqlite-file. """
         for gdm_id in list(self.result_dict.keys()):
             date_time = datetime.datetime.now()
             cursor = aux_functions.conn.cursor()
@@ -275,6 +314,9 @@ class VocabularySizeTest(AbstractConvTest, ABC):
             except sqlite3.Error as er:
                 # Failed insert.
                 print("Error occurred while inserting into MLST-table. Error was {}.".format(er))
+
+            """ Per conversation, it loops over the words that were counted in that conversation. Per word, the word
+            and its frequency in that conversation is transferred to the sqlite-database. """
             for conv_nbr in self.result_dict[gdm_id]['Conversations']:
                 for word in self.result_dict[gdm_id]['Conversations'][conv_nbr]['word_counter']:
                     cursor = aux_functions.conn.cursor()
@@ -294,24 +336,27 @@ class VocabularySizeTest(AbstractConvTest, ABC):
                         # Failed insert.
                         print(er)
 
+                """ Per word rank that was logged from the test results, one unit is added times the frequency. This is
+                in order to fit the Grafana-way of producing histograms. """
                 for word_rank in self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list']:
-                    cursor = aux_functions.conn.cursor()
-                    try:
-                        cursor.execute(
-                            """
-                            INSERT
-                            INTO MLST2_frequency_list(test_id, conv_nbr, word_rank, frequency)
-                            VALUES (?, ?, ?, ?);
-                            """,
-                            [test_id, conv_nbr, word_rank,
-                             self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list'][word_rank]]
-                        )
-                        # Successful insert
-                        aux_functions.conn.commit()
-                    except sqlite3.Error as er:
-                        # Failed insert.
-                        print(er)
+                    for i in range(self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list'][word_rank]):
+                        cursor = aux_functions.conn.cursor()
+                        try:
+                            cursor.execute(
+                                """
+                                INSERT
+                                INTO MLST2_frequency_list(test_id, conv_nbr, word_rank, frequency)
+                                VALUES (?, ?, ?, ?);
+                                """,
+                                [test_id, conv_nbr, word_rank, 1]
+                            )
+                            # Successful insert
+                            aux_functions.conn.commit()
+                        except sqlite3.Error as er:
+                            # Failed insert.
+                            print(er)
 
+                """ Also, the non-frequent words are transferred to make this data available as well. """
                 for non_freq_word in self.result_dict[gdm_id]['Conversations'][conv_nbr]['non_frequent_words']:
                     cursor = aux_functions.conn.cursor()
                     try:
@@ -342,6 +387,8 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         self.result_dict = {}
 
     def analyse_conversations(self, conversations: list):
+        """ Loops over all conversations, it analyses each conversation, and then it adds the results to the results
+        dict."""
         for i in range(len(conversations)):
             conv = conversations[i]
             results = self.analyse(conv)
@@ -355,16 +402,18 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         return self.result_dict
 
     def analyse(self, conv: Conversation):
+        """ Per conversation, the test case is performed. It produces a list of dicts, where every dict contains the two
+        compared messages, along with its NSP-prediction. """
         results = list()
         for i in range(1, len(conv)):
-            elem = conv[i]
-            if elem.get_role() == 'Testee':
+            message = conv[i]
+            if message.get_role() == 'Testee':
                 result = {}
                 prev_string = str(conv[i - 1])
-                testee_string = str(elem)
+                testee_string = str(message)
                 next_sent_prediction = self.next_sent_prediction(string1=prev_string, string2=testee_string)
                 result['Previous message'] = str(prev_string)
-                result['Testee message'] = str(elem)
+                result['Testee message'] = str(message)
                 result['NSP-prediction'] = next_sent_prediction
                 results.append(result)
         return results
@@ -373,20 +422,24 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         return self.test_id
 
     def next_sent_prediction(self, string1, string2):
+        """ Method for predicting whether string2 coherently follows string1 or not, using NSP-BERT. """
         inputs = self.bert_tokenizer(string1, string2, return_tensors='pt')
         outputs = self.bert_model(**inputs)
         return self.softmax(outputs.logits.tolist()[0])
 
     @staticmethod
     def softmax(vector):
+        """ Softmax-function for interpreting the logits produced by NSP-BERT. """
         e = exp(vector)
         return e / e.sum()
 
     def present(self):
-        if config.PRESENTATION_WAY == "sqlite":
+        if config.EXPORT_CHANNEL == "sqlite":
             self.present_through_sqlite()
 
     def present_through_sqlite(self):
+        """ Method for exporting/presenting the results of this test into the sqlite-database. Per GDM, it inserts info
+        about which test that was performed on which GDM and at what datetime. """
         for gdm_id in list(self.result_dict.keys()):
             date_time = datetime.datetime.now()
             cursor = aux_functions.conn.cursor()
@@ -405,6 +458,9 @@ class CoherentResponseTest(AbstractConvTest, ABC):
             except sqlite3.Error as er:
                 # Failed insert.
                 print("Error occurred while inserting into MLST-table. Error was {}.".format(er))
+
+            """ Per conversation and per test result, the previous and the tested message is inserted into the database,
+            along with the positive and negative predictions."""
             for conv_nbr in self.result_dict[gdm_id]['Conversations']:
                 for tested_response_dict in self.result_dict[gdm_id]['Conversations'][conv_nbr]:
                     cursor = aux_functions.conn.cursor()
@@ -435,6 +491,7 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
         self.result_dict = {}
 
     def analyse_conversations(self, conversations: list):
+        """ Applies this test on all the conversations and then adds the results to the result dict. """
         for i in range(len(conversations)):
             conv = conversations[i]
             results = self.analyse(conv)
@@ -448,11 +505,15 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
         return self.result_dict
 
     def analyse(self, conv: Conversation):
+        """ Per conversation, the test is applied and the results are stored. """
         results = {
             'amount_sentences': 0,
             'amount_words': 0,
             'amount_words_grt_6': 0
         }
+
+        """ Loops over all messages, and per message it stores the amount of sentences, the amount of words and the 
+        amount of words greater than six. Then, the readability index is calculated according to a formula."""
         for message in conv:
             if message.get_role() == 'Testee':
                 results['amount_sentences'] += conversation.count_sentences_within_string(str(message))
@@ -469,10 +530,12 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
         return self.test_id
 
     def present(self):
-        if config.PRESENTATION_WAY == "sqlite":
+        if config.EXPORT_CHANNEL == "sqlite":
             self.present_through_sqlite()
 
     def present_through_sqlite(self):
+        """ Method for transferring the test results into the database. More specifically, it loops over all GDMs, then
+        checks per conversation what the different metrics were, and then inserts those into the database. """
         for gdm_id in list(self.result_dict.keys()):
             date_time = datetime.datetime.now()
             cursor = aux_functions.conn.cursor()

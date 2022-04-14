@@ -1,5 +1,5 @@
-import abc
-from typing import List, Dict
+import os
+import aux_functions
 import config
 import conv_agents
 from conversation import Conversation
@@ -21,11 +21,22 @@ class TestWorld:
         self.test_manager = None
         self.conversations = []
         self.conv_starter = self.args.get('conv_starter')
+        config.VERBOSE = self.args.get('verbose')
+        config.EXPORT_CHANNEL = self.args.get('export_channel')
         config.GENERATE_DIALOGUE = self.args.get("gen_dialog")
 
         """ Loads and instantiates the GDMs. """
         self.conv_partner = conv_agents.load_conv_agent(self.args.get('conv_partner'))[0]
         self.testees = conv_agents.load_conv_agent(self.args.get('tested_gdms'), role='Testee')
+
+        """ Makes sure to set up the sqlite-database according to the create-tables.sql-file. """
+        if config.EXPORT_CHANNEL == "sqlite":
+            print(os.path.exists(aux_functions.db_filename))
+            print(config.OVERWRITE_TABLE)
+            if not os.path.exists(aux_functions.db_filename) or config.OVERWRITE_TABLE:
+                if config.VERBOSE:
+                    print("Creates new database file. ")
+                os.system("sqlite3 {} < create-tables.sql".format(aux_functions.db_filename))
 
     @staticmethod
     def add_to_argparse(parser):
@@ -40,9 +51,15 @@ class TestWorld:
                                  "If several, have them separated by ','. ")
         parser.add_argument('-cp', '--conv-partner', metavar='', type=str, default=config.CONV_PARTNER,
                             help="Specify which GDM to test your GDM against")
+        parser.add_argument('-ec', '--export-channel', metavar='', type=str, default=config.EXPORT_CHANNEL,
+                            help="Specify which channel to export the results through. Currently only 'sqlite' "
+                                 "is implemented""")
         parser.add_argument('-gd', '--gen-dialog', action="store_true", default=True,
                             help="True: The script generates conversations using the specified GDMs. False: Evaluates a"
                                  " .txt-file")
+        parser.add_argument('-v', '--verbose', action="store_true", default=True,
+                            help="True: The script prints out what happens so that the user may follow the process. "
+                                 "False: A silent run of the script where nothing is printed. Defaults to True.")
         parser.add_argument('-cs', '--conv-starter', metavar='', type=str, default='',
                             help="Testee: testee initiates every conversation. Conv-partner: the conversation partner "
                                  "initiates all conversations. Not specified: 50-50 per conversation who starts that "
@@ -60,12 +77,12 @@ class TestWorld:
         for i in range(len(self.testees)):
             testee = self.testees[i]
             for j in range(self.amount_convs):
-                if config.DEBUG_MODE:
+                if config.VERBOSE:
                     print("Initiates conversation {}".format(j + 1))
                 conv = Conversation(testee=testee, conv_partner=self.conv_partner, conv_starter=self.conv_starter)
                 conv = conv.initiate_conversation(self.conv_length)
                 self.conversations.append(conv)
-                if config.DEBUG_MODE:
+                if config.VERBOSE:
                     print("Ends conversation {}".format(j + 1))
 
     def init_tests(self):
@@ -83,6 +100,10 @@ class TestWorld:
                 conv.conv_from_file(lines=lines)
         return conv
 
-    def present_results(self):
-        self.test_manager.present_results()
-        pass
+    def export_results(self):
+        """ Exports the results using the selected presentation way. """
+        if config.VERBOSE:
+            print("Exporting results")
+        self.test_manager.export_results()
+        if config.VERBOSE:
+            print("Export finished")
