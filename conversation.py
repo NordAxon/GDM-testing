@@ -13,7 +13,9 @@ def generate_random_text():
 
     start_str = random.sample(lines, 1)[0].split('\n')[0]
     generator = pipeline('text-generation', model='gpt2')
-    generated_response = generator(start_str, max_length=30, num_return_sequences=1)[0]['generated_text']
+    #generated_response = generator(start_str, max_length=30, num_return_sequences=1)[0]['generated_text']
+    generated_response = generator(start_str, num_beams=10, no_repeat_ngram_size=3, topk=20)
+    generated_response = generated_response.replace("\n\n", "\n")
     generated_response = generated_response.replace("\n", " ")
     return generated_response
 
