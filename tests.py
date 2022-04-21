@@ -451,7 +451,7 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         messages_testee = conv.filter_mgs("Testee")
         messages_other_agent = conv.filter_gdm_preceding_mgs()
         ns_predictions = self.batch_nsp(first_sentences=messages_other_agent, second_sentences=messages_testee)
-        for i in range(1, len(conv)):
+        for i in range(1, len(conv) - 1):
             message = conv[i]
             if message.get_role() == 'Testee':
                 result = {}
