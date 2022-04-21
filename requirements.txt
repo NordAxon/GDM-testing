@@ -1,7 +1,5 @@
 detoxify==0.4.0
 numpy==1.22.2
-py_readability==1.0
-pyreadability==0.4.0
 requests==2.27.1
 torch==1.10.2+cu102
 transformers==4.17.0.dev0

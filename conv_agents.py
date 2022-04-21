@@ -65,8 +65,8 @@ class BlenderBot400M(AbstractAgent):
         conv_string = self.__array2blenderstring(messages[-self.chat_memory:])
         if len(conv_string) > 128:
             conv_string = conv_string[-128:]
-        inputs = self.tokenizer([conv_string], return_tensors='pt')
-        reply_ids = self.model.generate(**inputs)
+        inputs = self.tokenizer([conv_string], return_tensors='pt').to(self.device)
+        reply_ids = self.model.generate(**inputs, num_beams=10, no_repeat_ngram_size=3)
         response = self.tokenizer.batch_decode(reply_ids, skip_special_tokens=True)[0]
         return response
 
@@ -90,12 +90,14 @@ class BlenderBot90M(AbstractAgent):
 
         """ self.chat_memory regulates how many previous lines of the conversation that Blenderbot takes in. """
         self.chat_memory = 6
+        self.do_sample = True if role == "Other agent" else False
 
     def act(self, messages):
         """ Method for producing responses from Blenderbot's 90M-model."""
         conv_string = '\n'.join(elem for elem in messages[-self.chat_memory:])
         inputs = self.tokenizer([conv_string], return_tensors='pt').to(self.device)
-        reply_ids = self.model.generate(**inputs).to(self.device)
+        reply_ids = self.model.generate(**inputs, num_beams=10, no_repeat_ngram_size=3, do_sample=self.do_sample,
+                                        top_p=0.9, top_k=0)
         response = self.tokenizer.batch_decode(reply_ids, skip_special_tokens=True)[0]
         return response
 
