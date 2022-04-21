@@ -111,7 +111,7 @@ class Emely02(AbstractAgent):
 
     def setup(self):
         success = os.system("docker container restart {}".format(self.emely_id, self.emely_id))
-        if success == 1:
+        if success != 0:
             os.system("docker run --name {} -d -p 8080:8080 {}".format(self.emely_id, self.emely_id))
         time.sleep(5)
 
@@ -143,7 +143,7 @@ class Emely03(AbstractAgent):
 
     def setup(self):
         success = os.system("docker container restart {}".format(self.emely_id, self.emely_id))
-        if success == 1:
+        if success != 0:
             os.system("docker run --name {} -d -p 8080:8080 {}".format(self.emely_id, self.emely_id))
         time.sleep(5)
 
@@ -175,7 +175,7 @@ class Emely04(AbstractAgent):
 
     def setup(self):
         success = os.system("docker container restart {}".format(self.emely_id, self.emely_id))
-        if success == 1:
+        if success != 0:
             os.system("docker run --name {} -d -p 8080:8080 {}".format(self.emely_id, self.emely_id))
         time.sleep(5)
 
@@ -207,7 +207,7 @@ class Emely05(AbstractAgent):
 
     def setup(self):
         success = os.system("docker container restart {}".format(self.emely_id, self.emely_id))
-        if success == 1:
+        if success != 0:
             os.system("docker run --name {} -d -p 8080:8080 {}".format(self.emely_id, self.emely_id))
         time.sleep(5)
 
