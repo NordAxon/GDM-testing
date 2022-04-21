@@ -139,10 +139,11 @@ class Conversation:
         return stringified_messages
 
     def filter_gdm_preceding_mgs(self):
-        """ Method for handling how to filter out the messages that precedess testee's messages. If Testee produced the second message, it means that the random generator may have produced the first message. If """
+        """ Method for handling how to filter out the messages that precedess testee's messages. If Testee produced the
+        second message, it means that the random generator may have produced the first message. """
         if self.messages[1].get_role() == "Testee":
             filtered_mgs = []
-            for i in range(0, config.CONV_LENGTH, 2):
+            for i in range(0, len(self.messages) - 1, 2):
                 filtered_message = str(self.messages[i])
                 filtered_mgs.append(filtered_message)
             return filtered_mgs

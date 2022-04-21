@@ -83,7 +83,7 @@ class BlenderBot90M(AbstractAgent):
 
     def __init__(self, agent_id, role='Other agent'):
         AbstractAgent.__init__(self, agent_id=agent_id, role=role)
-        self.device = "cpu" #"cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.name = 'facebook/blenderbot_small-90M'
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.name).to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(self.name)
@@ -96,8 +96,8 @@ class BlenderBot90M(AbstractAgent):
         """ Method for producing responses from Blenderbot's 90M-model."""
         conv_string = '\n'.join(elem for elem in messages[-self.chat_memory:])
         inputs = self.tokenizer([conv_string], return_tensors='pt').to(self.device)
-        reply_ids = self.model.generate(**inputs, num_beams=15, no_repeat_ngram_size=3, do_sample=self.do_sample,
-                                        top_p=0.8, top_k=0)
+        reply_ids = self.model.generate(**inputs, num_beams=10, no_repeat_ngram_size=3, do_sample=self.do_sample,
+                                        top_p=0.9, top_k=0)
         response = self.tokenizer.batch_decode(reply_ids, skip_special_tokens=True)[0]
         return response
 
