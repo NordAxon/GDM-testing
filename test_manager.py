@@ -1,6 +1,6 @@
 import datetime
 import sqlite3
-
+import time
 import aux_functions
 import config
 import tests
@@ -58,11 +58,16 @@ class TestManager:
         for test_case in implemented_tests['static_tests']:
             if config.VERBOSE:
                 print("Initiates {}".format(test_case))
+                start_time_tc = time.time()
             test_case = implemented_tests['static_tests'][test_case]()
             test_case.analyse_conversations(self.conversations)
             self.test_results[test_case] = test_case
             if config.VERBOSE:
-                print("Finished")
+                end_time_tc = time.time() - start_time_tc
+                print("The test case took {:.2f} seconds / {:.2f} minutes / {:.2f} hours".format(end_time_tc,
+                                                                                                 end_time_tc / 60,
+                                                                                                 end_time_tc / (
+                                                                                                             60 ** 2)))
 
     def init_injected_tests(self):
         """ Method for initiating the injected tests, which loops over them one by one and first runs the injection and
@@ -70,17 +75,24 @@ class TestManager:
         for test_case in implemented_tests['injected_tests']:
             if config.VERBOSE:
                 print("Initiates {}".format(test_case))
+                start_time_tc = time.time()
             test_case.run(self.conversations)
             test_case.analyse(self.conversations)
             if config.VERBOSE:
-                print("Finished")
+                end_time_tc = time.time() - start_time_tc
+                print("The script took {:.2f} seconds / {:.2f} minutes / {:.2f} hours".format(end_time_tc,
+                                                                                              end_time_tc / 60,
+                                                                                              end_time_tc / (60 ** 2)))
 
     def export_results(self):
         """ Method for presenting/exporting the results, which per test case calls the method "present()", which per
          case handles how to present/export the results."""
         for test_case in self.test_results:
             if config.VERBOSE:
-                print("Transfers test results of {}".format(test_case))
+                print("Initiates {}".format(test_case))
+                start_time_tc = time.time()
             test_case.present()
             if config.VERBOSE:
-                print("Finished")
+                end_time_export = time.time() - start_time_tc
+                print("Finished. The export took {:.2f} seconds / {:.2f} minutes / {:.2f} hours".format(end_time_export,
+                                                                    end_time_export / 60, end_time_export / (60 ** 2)))

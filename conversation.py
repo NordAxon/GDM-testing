@@ -1,5 +1,5 @@
 import random
-from transformers import pipeline, set_seed
+from transformers import pipeline
 import config
 
 
@@ -14,7 +14,7 @@ def generate_random_text():
     start_str = random.sample(lines, 1)[0].split('\n')[0]
     generator = pipeline('text-generation', model='gpt2')
     #generated_response = generator(start_str, max_length=30, num_return_sequences=1)[0]['generated_text']
-    generated_response = generator(start_str, num_beams=10, no_repeat_ngram_size=3, topk=20)
+    generated_response = generator(start_str, num_beams=10, no_repeat_ngram_size=3, topk=20)[0]['generated_text']
     generated_response = generated_response.replace("\n\n", "\n")
     generated_response = generated_response.replace("\n", " ")
     return generated_response
@@ -83,7 +83,6 @@ class Conversation:
         """ Function for running one conversation between testee and conv_partner. The function lets every GDM produce
             conv_length responses with regards to the conversation and last response produced. The messages produced are
             stored in self.messages which is then returned to TestWorld.
-
         Loops 2 * conv_length response requests, where each turn self.whos_turn produces the response and then
                 self.whos_turn is switched to the other conversation partner. """
         for i in range(2 * conv_length):
@@ -129,14 +128,25 @@ class Conversation:
         """ Returns the ID of the testee for self (the Conversation-object self). """
         return self.testee.get_id()
 
-    def filter_testee_mgs(self):
+    def filter_mgs(self, role: str):
         """ Method for converting the list of Messages into a stringifed list of only the messages belonging to the
-        Testee, as to evaluate only these messages, should it be necessary. """
+        role specified as an argument, should it be necessary. """
         stringified_messages = []
         for message in self.messages:
-            if message.get_role() == "Testee":
+            if message.get_role() == role:
                 stringified_messages.append(str(message))
         return stringified_messages
+
+    def filter_gdm_preceding_mgs(self):
+        """ Method for handling how to filter out the messages that precedess testee's messages. If Testee produced the second message, it means that the random generator may have produced the first message. If """
+        if self.messages[1].get_role() == "Testee":
+            filtered_mgs = []
+            for i in range(0, config.CONV_LENGTH, 2):
+                filtered_message = str(self.messages[i])
+                filtered_mgs.append(filtered_message)
+            return filtered_mgs
+        else:
+            return self.filter_mgs("Other agent")
 
 
 class Message:

@@ -105,7 +105,7 @@ class ToxicContentTest(AbstractConvTest, ABC):
 
     def analyse(self, conv: Conversation):
         """ Method for applying the detoxifyer to all of testee's messages, and returns the scores."""
-        results = self.detoxify.predict(conv.filter_testee_mgs())
+        results = self.detoxify.predict(conv.filter_mgs(role="Testee"))
         return results
 
     def get_id(self):
@@ -174,8 +174,10 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         self.excluded_words = []
         self.excluded_tokens = conversation.set_of_excluded_tokens()
         self.contractions = self.specify_contractions()
-        self.frequency_dict = self.read_frequency_dict()
+        self.frequency_dict_word2rank = self.read_frequency_dict()
+        self.frequency_dict_rank2word = self.read_frequency_dict_rank2word()
         self.result_dict = {}
+        self.token_indicating_removal = "%%"
 
     @staticmethod
     def specify_contractions():
@@ -201,6 +203,22 @@ class VocabularySizeTest(AbstractConvTest, ABC):
             }
         return frequency_dict
 
+    @staticmethod
+    def read_frequency_dict_rank2word():
+        """ Method for setting up the frequency list-dict with a mapping from a rank to a word, stating which ranks
+        correspond with which words. """
+        with open('miscellaneous .txt-files/count_1w.txt') as f:
+            lines = f.readlines()
+
+        lines = [elem.split('\t', 1) for elem in lines]
+
+        for elem in lines:
+            elem[1] = elem[1][:-2]
+
+        for i in range(len(lines)):
+            lines[i] = lines[i][0]
+        return lines
+
     def analyse_conversations(self, conversations: list):
         """ Analyses all the conversations. Every conversation is analysed and the results are added to the results
         dict, which is then returned. """
@@ -218,17 +236,16 @@ class VocabularySizeTest(AbstractConvTest, ABC):
 
     def analyse(self, conv: Conversation):
         """ Function for storing words used by the GDM to keep track of its vocabulary.
-
         Loops over all messages and per message, it splits it in order to isolate the words used. Then it removed
         tokens such as ',', '.', '?', '!'. After these processes, it is added to the dict, either adds 1 to the amount
         of usages for that word, or sets it to one if it is a new word. """
         testee_id = conv.get_testee_id()
-        if testee_id not in self.vocabulary:
-            self.vocabulary[testee_id] = {
-                'word_counter': Counter(),
-                'frequency_word_list': {},
-                'non_frequent_words': {}
-            }
+
+        self.vocabulary[testee_id] = {
+            'word_counter': Counter(),
+            'frequency_word_list': {},
+            'non_frequent_words': Counter()
+        }
 
         """ Loops over the messages in the conversation. Per message, it is first checked for whether it belongs to the
         testee or not. It continues only if it belongs to the testee."""
@@ -236,41 +253,62 @@ class VocabularySizeTest(AbstractConvTest, ABC):
             if message.get_role() != "Testee":
                 continue
             word_array = str(message).split()
+            word_array = self.preprocess_word_array(word_array)
 
-            for word in word_array:
-                """ Removes tokens defined in the constructor from strings, and if the word is defined in the
-                constructor as an "excluded" word, it is not counted. If it is an contraction, it is prolonged to the 
-                full meaning of the contraction. """
-                word = word.lower()
-                word = conversation.clean_from_excluded_tokens(word)
-                if word in self.excluded_words:
-                    continue
+            """ The one or several words that word_array may contain is counted and then added to the existing counter. 
+            """
+            counter = Counter(word_array)
+            self.vocabulary[testee_id]['word_counter'] += counter
 
-                """ If a contraction, its full meaning is found. If no contraction, the word is just inserted into the 
-                list. """
-                if word in self.contractions:
-                    word = self.find_contraction(word)
-                else:
-                    word = [word]
+            """ Calling the method that adds any word to the frequency list. """
+            self.add_to_freq_list(word_array, testee_id)
+        return self.vocabulary[testee_id].copy()
 
-                """ The one or several words that {word} may contain is counted for and then added to the existing 
-                counter. """
-                counter = Counter(word)
-                self.vocabulary[testee_id]['word_counter'] = self.vocabulary[testee_id]['word_counter'] + counter
+    def preprocess_word_array(self, word_array):
+        """ Method for preprocessing word_array so that it is ready to be inserted into a Counter for counting the
+        frequency per word. Removes tokens defined in the constructor from strings, and if the word is defined in the
+        constructor as an "excluded" word, it is not counted. If it is an contraction, it is prolonged to the full
+        meaning of the contraction. It is done by copying the array, then adding the correct words to the copy and
+        replacing the faulty words with self.token_indicating_removal, whose spots are removed in the end of this
+        function. """
+        fixed_word_array = word_array.copy()
+        for i in range(len(word_array)):
+            word = word_array[i]
+            word = word.lower()
+            word = conversation.clean_from_excluded_tokens(word)
+            if word in self.excluded_words or word in self.excluded_tokens:
+                fixed_word_array[i] = self.token_indicating_removal
+                continue
 
-                """ Per word that may occur in {word}, the frequency list is also updated. That is the mapping from a 
-                rank to a frequency. If it does not exist in the frequency list, it is added to the non-frequent 
-                words-list, which means that the word did not exist in the current frequency list. """
-                for word_elem in word:
-                    try:
-                        self.vocabulary[testee_id]['frequency_word_list'][self.frequency_dict[word_elem]['rank']] = \
-                            self.vocabulary[testee_id]['word_counter'][word_elem]
-                    except KeyError:
-                        if word_elem in self.vocabulary[testee_id]['non_frequent_words']:
-                            self.vocabulary[testee_id]['non_frequent_words'][word_elem] += 1
-                        else:
-                            self.vocabulary[testee_id]['non_frequent_words'][word_elem] = 1
-        return self.vocabulary[testee_id]
+            """ If the word is a contraction, its full meaning is found and inserted word-wise into the list called 
+            word. If no contraction, the word is just inserted into the list. """
+            if word in self.contractions:
+                word = self.find_contraction(word)
+                for word_part in word:
+                    fixed_word_array.append(word_part)
+                fixed_word_array[i] = self.token_indicating_removal
+                continue
+            fixed_word_array[i] = word
+
+        while "%%" in fixed_word_array:
+            fixed_word_array.remove(self.token_indicating_removal)
+        return fixed_word_array
+
+    def add_to_freq_list(self, word_list, testee_id):
+        """ Per word that may occur in word_list, the frequency list is also updated. That is the mapping from a
+        rank to a frequency. If it does not exist in the frequency list, it is added to the non-frequent
+        words-list, which means that the word did not exist in the current frequency list, meaning that it is
+        irregular. """
+        for word in word_list:
+            try:
+                """ Fetching the rank may cause KeyError if the specific word is non-existent in the frequency list. """
+                rank = self.frequency_dict_word2rank[word]['rank']
+                self.vocabulary[testee_id]['frequency_word_list'][rank] = \
+                    self.vocabulary[testee_id]['word_counter'][word]
+            except KeyError:
+                """ Adds the counter to the existing counter in the non-frequent word list"""
+                word_counter = Counter([word])
+                self.vocabulary[testee_id]['non_frequent_words'] += word_counter
 
     def get_id(self):
         """ Returns the ID of this test. """
@@ -341,14 +379,18 @@ class VocabularySizeTest(AbstractConvTest, ABC):
                 for word_rank in self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list']:
                     for i in range(self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list'][word_rank]):
                         cursor = aux_functions.conn.cursor()
+
+                        """ Reads the word combined with the word_rank, with the purpose of clarification in the db, if
+                        the user would like to double-check any word's frequency or whatever the reason. """
+                        word = self.frequency_dict_rank2word[word_rank - 1]
                         try:
                             cursor.execute(
                                 """
                                 INSERT
-                                INTO MLST2_frequency_list(test_id, conv_nbr, word_rank, frequency)
-                                VALUES (?, ?, ?, ?);
+                                INTO MLST2_frequency_list(test_id, conv_nbr, word, word_rank, frequency)
+                                VALUES (?, ?, ?, ?, ?);
                                 """,
-                                [test_id, conv_nbr, word_rank, 1]
+                                [test_id, conv_nbr, word, word_rank, 1]
                             )
                             # Successful insert
                             aux_functions.conn.commit()
@@ -380,10 +422,11 @@ class CoherentResponseTest(AbstractConvTest, ABC):
     """ MLST4 test testing for coherence between two responses."""
 
     def __init__(self):
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.test_id = 'MLST4'
         self.bert_type = 'bert-base-uncased'
         self.bert_tokenizer = BertTokenizer.from_pretrained(self.bert_type)
-        self.bert_model = BertForNextSentencePrediction.from_pretrained(self.bert_type)
+        self.bert_model = BertForNextSentencePrediction.from_pretrained(self.bert_type).to(self.device)
         self.result_dict = {}
 
     def analyse_conversations(self, conversations: list):
@@ -405,15 +448,21 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         """ Per conversation, the test case is performed. It produces a list of dicts, where every dict contains the two
         compared messages, along with its NSP-prediction. """
         results = list()
+        messages_testee = conv.filter_mgs("Testee")
+        messages_other_agent = conv.filter_gdm_preceding_mgs()
+        ns_predictions = self.batch_nsp(first_sentences=messages_other_agent, second_sentences=messages_testee)
         for i in range(1, len(conv)):
             message = conv[i]
             if message.get_role() == 'Testee':
                 result = {}
-                prev_string = str(conv[i - 1])
-                testee_string = str(message)
-                next_sent_prediction = self.next_sent_prediction(string1=prev_string, string2=testee_string)
-                result['Previous message'] = str(prev_string)
-                result['Testee message'] = str(message)
+                prev_message = str(conv[i - 1])
+                testee_message = str(message)
+
+                """ Pops out the index 0-element since that belongs to the currently analyzed pair of messages. Then, we 
+                extract element 0 from that list, since we only need the positive prediction. """
+                next_sent_prediction = ns_predictions.pop(0)[0]
+                result['Previous message'] = str(prev_message)
+                result['Testee message'] = str(testee_message)
                 result['NSP-prediction'] = next_sent_prediction
                 results.append(result)
         return results
@@ -426,6 +475,15 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         inputs = self.bert_tokenizer(string1, string2, return_tensors='pt')
         outputs = self.bert_model(**inputs)
         return self.softmax(outputs.logits.tolist()[0])
+
+    def batch_nsp(self, first_sentences: list, second_sentences: list):
+        """ Method for assessing NSP between two lists of sentences, with the purpose of improving the performance of
+        the test rather than NSP-analyzing message-wise. """
+        text_pairs = [(first, second) for first, second in zip(first_sentences, second_sentences)]
+        encodings = self.bert_tokenizer.batch_encode_plus(text_pairs, return_tensors="pt", padding=True).to(self.device)
+        outputs = self.bert_model(**encodings)
+        probs = outputs.logits.softmax(dim=-1)
+        return probs.tolist()
 
     @staticmethod
     def softmax(vector):

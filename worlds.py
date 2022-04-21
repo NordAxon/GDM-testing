@@ -14,6 +14,9 @@ class TestWorld:
     def __init__(self, args):
         if not config.DEBUG_MODE:
             self.args = vars(args)
+            config.VERBOSE = self.args.get('verbose')
+            config.EXPORT_CHANNEL = self.args.get('export_channel')
+            config.GENERATE_DIALOGUE = self.args.get("gen_dialog")
         else:
             self.args = args
         self.conv_length = self.args.get('length_conv_round', config.CONV_LENGTH)
@@ -21,9 +24,6 @@ class TestWorld:
         self.test_manager = None
         self.conversations = []
         self.conv_starter = self.args.get('conv_starter')
-        config.VERBOSE = self.args.get('verbose')
-        config.EXPORT_CHANNEL = self.args.get('export_channel')
-        config.GENERATE_DIALOGUE = self.args.get("gen_dialog")
 
         """ Loads and instantiates the GDMs. """
         self.conv_partner = conv_agents.load_conv_agent(self.args.get('conv_partner'))[0]
@@ -69,6 +69,10 @@ class TestWorld:
                                  "letters to interpret what file type it is. No input is interpreted as such the script"
                                  "generates conversations using the GDMs. Currently only miscellaneous .txt-files are"
                                  "supported. ")
+        parser.add_argument('-ot', '--overwrite-table', action="store_true", default=True, help="Should the current "
+                                 "table be overwritten or should the results be inserted into the currently existing "
+                                 "one. True for creating a new table, False for inserting into the currently existing "
+                                 "database-file. Defaults to True. ")
 
     def init_conversations(self):
         """ Initiates the conversation. Aims to have a consistent conversation partner conv_partner, with whom each of
@@ -76,6 +80,8 @@ class TestWorld:
         conversations that will then be evaluated and pose the grounds for evaluation and examination. """
         for i in range(len(self.testees)):
             testee = self.testees[i]
+            if "emely" in testee.get_id():
+                testee.setup()
             for j in range(self.amount_convs):
                 if config.VERBOSE:
                     print("Initiates conversation {}".format(j + 1))
@@ -84,6 +90,8 @@ class TestWorld:
                 self.conversations.append(conv)
                 if config.VERBOSE:
                     print("Ends conversation {}".format(j + 1))
+            if "emely" in testee.get_id():
+                testee.shutdown()
 
     def init_tests(self):
         """ Initiates the evaluation of the conversations produced. """
@@ -107,3 +115,8 @@ class TestWorld:
         self.test_manager.export_results()
         if config.VERBOSE:
             print("Export finished")
+
+    def shutdown_script(self):
+        for gdm in self.testees:
+            if 'emely' in gdm.get_id():
+                gdm.shutdown()
