@@ -57,6 +57,7 @@ CREATE TABLE MLST2_word_counter (
 CREATE TABLE MLST2_frequency_list (
     test_id         TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr        INT NOT NULL,
+    word            TEXT NOT NULL,
     word_rank       INT NOT NULL,
     frequency       INT NOT NULL,
     FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
