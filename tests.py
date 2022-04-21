@@ -530,8 +530,8 @@ class CoherentResponseTest(AbstractConvTest, ABC):
                             VALUES (?, ?, ?, ?, ?, ?);
                             """,
                             [test_id, conv_nbr, tested_response_dict['Previous message'],
-                             tested_response_dict['Testee message'], tested_response_dict['NSP-prediction'][0],
-                             tested_response_dict['NSP-prediction'][1]]
+                             tested_response_dict['Testee message'], tested_response_dict['NSP-prediction'],
+                             1 - tested_response_dict['NSP-prediction']]
                         )
                         # Successful insert
                         aux_functions.conn.commit()
