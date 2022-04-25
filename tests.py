@@ -14,7 +14,10 @@ import aux_functions
 import config
 import contractions
 import conversation
-from conversation import Conversation
+from conversation import Conversation, Message
+
+from nltk.tokenize import RegexpTokenizer
+
 
 
 class AbstractTestCase(abc.ABC):
@@ -233,6 +236,42 @@ class VocabularySizeTest(AbstractConvTest, ABC):
                 self.result_dict[conv.get_testee_id()]['Conversations'] = {}
                 self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
         return self.result_dict
+
+
+    def analyse2(self, conv: Conversation):
+        "My attempt at a quicker version /Alex "
+        def is_testee(message: Message):
+            return message.agent_id == "Testee"
+
+        # Creates a generator of messages and joins them into one large string which is then lowered
+        testee_messages = filter(lambda x: is_testee(x), conv)
+        testee_strings = (str(m) for m in testee_messages)
+        testee_text = ' '.join(testee_strings).lower()
+
+
+        # Tokenizer that matches word characters and apostrophes
+        tokenizer = RegexpTokenizer(r"[\w']+")
+        spans = tokenizer.span_tokenize(testee_text)
+        rawtokens = (testee_text[begin : end] for (begin, end) in spans)
+
+        def get_words(tokens):
+            "Checks for contradictions"
+            for token in tokens:
+                # Token is a contracted word
+                if token in self.contractions.keys():
+                    words = self.contractions[token].split("/")[0]
+                    for word in words.split(" "):
+                        yield word
+                else:
+                    yield token
+                    
+        word_gen = get_words(rawtokens)
+        counter = Counter(word_gen)
+
+        # Split the words into different ranks or whatever
+        return counter
+
+
 
     def analyse(self, conv: Conversation):
         """ Function for storing words used by the GDM to keep track of its vocabulary.
