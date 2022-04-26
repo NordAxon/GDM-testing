@@ -377,7 +377,8 @@ class VocabularySizeTest(AbstractConvTest, ABC):
                 """ Per word rank that was logged from the test results, one unit is added times the frequency. This is
                 in order to fit the Grafana-way of producing histograms. """
                 for word_rank in self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list']:
-                    for i in range(self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list'][word_rank]):
+                    for i in range(
+                            self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list'][word_rank]):
                         cursor = aux_functions.conn.cursor()
 
                         """ Reads the word combined with the word_rank, with the purpose of clarification in the db, if
@@ -575,9 +576,14 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
         for message in conv:
             if message.get_role() == 'Testee':
                 results['amount_sentences'] += conversation.count_sentences_within_string(str(message))
-                results['amount_words'] += len(str(message).split())
                 for word in str(message).split():
                     word = conversation.clean_from_excluded_tokens(word)
+
+                    """ word needs to be no excluded token and longer than 0. That is since if the GDM has produced this
+                    sentence as an example: "Hello , how are you today ?", then .clean_from_excluded_tokens would return 
+                    "" given "," or "?" as input, which should be disregarded. """
+                    if word not in self.excluded_tokens and len(word) > 0:
+                        results['amount_words'] += 1
                     if len(word) > 6:
                         results['amount_words_grt_6'] += 1
         results['readability_index'] = results['amount_words'] / results['amount_sentences'] + \
