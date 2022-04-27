@@ -116,64 +116,7 @@ class BlenderBot90M(AbstractAgent):
         return response
 
 
-class Emely02(AbstractAgent):
-    def __init__(self, agent_id, role='Other agent'):
-        AbstractAgent.__init__(self, agent_id=agent_id, role=role)
-        self.URL = "http://localhost:8080/inference"
-        self.chat_memory = 6
-
-    def act(self, messages):
-        # Inputs the conversation array and outputs a response from Emely
-        conv_string = '\n'.join([str(elem) for elem in messages[-self.chat_memory:]])
-        json_obj = {
-            "accept": "application/json",
-            "Content-Type": "application/json",
-            "text": conv_string
-        }
-        r = requests.post(self.URL, json=json_obj)
-        response = r.json()['text']
-        return response
-
-
-class Emely03(AbstractAgent):
-    def __init__(self, agent_id, role='Other agent'):
-        AbstractAgent.__init__(self, agent_id=agent_id, role=role)
-        self.URL = "http://localhost:8080/inference"
-        self.chat_memory = 6
-
-    def act(self, messages):
-        # Inputs the conversation array and outputs a response from Emely
-        conv_string = '\n'.join([str(elem) for elem in messages[-self.chat_memory:]])
-        json_obj = {
-            "accept": "application/json",
-            "Content-Type": "application/json",
-            "text": conv_string
-        }
-        r = requests.post(self.URL, json=json_obj)
-        response = r.json()['text']
-        return response
-
-
-class Emely04(AbstractAgent):
-    def __init__(self, agent_id, role='Other agent'):
-        AbstractAgent.__init__(self, agent_id=agent_id, role=role)
-        self.URL = "http://localhost:8080/inference"
-        self.chat_memory = 6
-
-    def act(self, messages):
-        # Inputs the conversation array and outputs a response from Emely
-        conv_string = '\n'.join([str(elem) for elem in messages[-self.chat_memory:]])
-        json_obj = {
-            "accept": "application/json",
-            "Content-Type": "application/json",
-            "text": conv_string
-        }
-        r = requests.post(self.URL, json=json_obj)
-        response = r.json()['text']
-        return response
-
-
-class Emely05(AbstractAgent):
+class Emely(AbstractAgent):
     def __init__(self, agent_id, role='Other agent'):
         AbstractAgent.__init__(self, agent_id=agent_id, role=role)
         self.URL = "http://localhost:8080/inference"
@@ -198,10 +141,10 @@ available_agents = {
     'human': Human,
     'blenderbot90m': BlenderBot90M,
     'blenderbot400m': BlenderBot400M,
-    'emely02': Emely02,
-    'emely03': Emely03,
-    'emely04': Emely04,
-    'emely05': Emely05
+    'emely02': Emely,
+    'emely03': Emely,
+    'emely04': Emely,
+    'emely05': Emely
 }
 
 
