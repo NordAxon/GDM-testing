@@ -39,18 +39,7 @@ CREATE TABLE MLST7_results (
 CREATE TABLE MLST4_results (
     test_id         TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr        INT NOT NULL,
-    prev_msg        TEXT NOT NULL,
-    testee_message  DOUBLE NOT NULL,
-    pos_pred        DOUBLE NOT NULL,
     neg_pred        DOUBLE NOT NULL,
-    FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
-);
-
-CREATE TABLE MLST2_word_counter (
-    test_id         TEXT DEFAULT (lower(hex(randomblob(16)))),
-    conv_nbr        INT NOT NULL,
-    word            TEXT NOT NULL,
-    frequency       INT NOT NULL,
     FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
 );
 
@@ -74,9 +63,6 @@ CREATE TABLE MLST2_non_frequent_list (
 CREATE TABLE MLST2TC2_results (
     test_id             TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr            INT NOT NULL,
-    amount_sents        INT NOT NULL,
-    amount_words        INT NOT NULL,
-    amount_words_grt_6  INT NOT NULL,
     readab_index        DOUBLE NOT NULL,
     FOREIGN KEY         (test_id) REFERENCES MLST(test_id)
 );

@@ -356,24 +356,6 @@ class VocabularySizeTest(AbstractConvTest, ABC):
             """ Per conversation, it loops over the words that were counted in that conversation. Per word, the word
             and its frequency in that conversation is transferred to the sqlite-database. """
             for conv_nbr in self.result_dict[gdm_id]['Conversations']:
-                for word in self.result_dict[gdm_id]['Conversations'][conv_nbr]['word_counter']:
-                    cursor = aux_functions.conn.cursor()
-                    try:
-                        cursor.execute(
-                            """
-                            INSERT
-                            INTO MLST2_word_counter(test_id, conv_nbr, word, frequency)
-                            VALUES (?, ?, ?, ?);
-                            """,
-                            [test_id, conv_nbr, word,
-                             self.result_dict[gdm_id]['Conversations'][conv_nbr]['word_counter'][word]]
-                        )
-                        # Successful insert
-                        aux_functions.conn.commit()
-                    except sqlite3.Error as er:
-                        # Failed insert.
-                        print(er)
-
                 """ Per word rank that was logged from the test results, one unit is added times the frequency. This is
                 in order to fit the Grafana-way of producing histograms. """
                 for word_rank in self.result_dict[gdm_id]['Conversations'][conv_nbr]['frequency_word_list']:
@@ -527,12 +509,10 @@ class CoherentResponseTest(AbstractConvTest, ABC):
                         cursor.execute(
                             """
                             INSERT
-                            INTO MLST4_results(test_id, conv_nbr, prev_msg, testee_message, pos_pred, neg_pred)
-                            VALUES (?, ?, ?, ?, ?, ?);
+                            INTO MLST4_results(test_id, conv_nbr, neg_pred)
+                            VALUES (?, ?, ?);
                             """,
-                            [test_id, conv_nbr, tested_response_dict['Previous message'],
-                             tested_response_dict['Testee message'], tested_response_dict['NSP-prediction'],
-                             1 - tested_response_dict['NSP-prediction']]
+                            [test_id, conv_nbr, 1 - tested_response_dict['NSP-prediction']]
                         )
                         # Successful insert
                         aux_functions.conn.commit()
@@ -625,12 +605,10 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
                     cursor.execute(
                         """
                         INSERT
-                        INTO MLST2TC2_results(test_id, conv_nbr, amount_sents, amount_words, amount_words_grt_6,
-                         readab_index)
-                        VALUES (?, ?, ?, ?, ?, ?);
+                        INTO MLST2TC2_results(test_id, conv_nbr, readab_index)
+                        VALUES (?, ?, ?);
                         """,
-                        [test_id, conv_nbr, conv['amount_sentences'], conv['amount_words'], conv['amount_words_grt_6'],
-                         conv['readability_index']]
+                        [test_id, conv_nbr, conv['readability_index']]
                     )
                     # Successful insert
                     aux_functions.conn.commit()
