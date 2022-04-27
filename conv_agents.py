@@ -1,6 +1,5 @@
 import abc
 import os
-from datetime import time
 import time
 
 import requests
@@ -31,6 +30,17 @@ class AbstractAgent(abc.ABC):
         """ Returns the role of self, as to find out if the message should be tested or not. """
         return self.role
 
+    def setup(self):
+        if "emely" in self.agent_id:
+            success = os.system("docker container restart {}".format(self.agent_id, self.agent_id))
+            if success != 0:
+                os.system("docker run --name {} -d -p 8080:8080 {}".format(self.agent_id, self.agent_id))
+            time.sleep(5)
+
+    def shutdown(self):
+        if "emely" in self.agent_id:
+            os.system("docker container kill {}".format(self.agent_id))
+            time.sleep(5)
 
 # ------- Different conversational agents implemented
 
@@ -40,7 +50,7 @@ class Human(AbstractAgent):
      is you who talk with the other agent. """
 
     def __init__(self, agent_id):
-        AbstractAgent.__init__(agent_id=agent_id)
+        AbstractAgent.__init__(self, agent_id=agent_id)
 
     def act(self, conversation):
         response = input("You: ")
@@ -52,13 +62,14 @@ class BlenderBot400M(AbstractAgent):
 
     def __init__(self, agent_id, role='Other agent'):
         AbstractAgent.__init__(self, agent_id=agent_id, role=role)
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cpu" #"cuda" if torch.cuda.is_available() else "cpu"
         self.name = 'facebook/blenderbot-400M-distill'
         self.model = BlenderbotForConditionalGeneration.from_pretrained(self.name).to(self.device)
         self.tokenizer = BlenderbotTokenizer.from_pretrained(self.name)
 
         """ self.chat_memory regulates how many previous lines of the conversation that Blenderbot takes in. """
-        self.chat_memory = 3
+        self.chat_memory = 3  # 1 if role == "Other agent" else 3
+        self.do_sample = True if role == "Other agent" else False
 
     def act(self, messages):
         """ Method for producing a response from the Blenderbot400M-model. """
@@ -66,7 +77,8 @@ class BlenderBot400M(AbstractAgent):
         if len(conv_string) > 128:
             conv_string = conv_string[-128:]
         inputs = self.tokenizer([conv_string], return_tensors='pt').to(self.device)
-        reply_ids = self.model.generate(**inputs, num_beams=10, no_repeat_ngram_size=3)
+        reply_ids = self.model.generate(**inputs, num_beams=10, no_repeat_ngram_size=3, do_sample=self.do_sample,
+                                        top_p=0.9, top_k=0)
         response = self.tokenizer.batch_decode(reply_ids, skip_special_tokens=True)[0]
         return response
 
@@ -89,7 +101,7 @@ class BlenderBot90M(AbstractAgent):
         self.tokenizer = AutoTokenizer.from_pretrained(self.name)
 
         """ self.chat_memory regulates how many previous lines of the conversation that Blenderbot takes in. """
-        self.chat_memory = 6
+        self.chat_memory = 1 if role == "Other agent" else 3
         self.do_sample = True if role == "Other agent" else False
 
     def act(self, messages):
@@ -107,13 +119,6 @@ class Emely02(AbstractAgent):
         AbstractAgent.__init__(self, agent_id=agent_id, role=role)
         self.URL = "http://localhost:8080/inference"
         self.chat_memory = 6
-        self.emely_id = "emely02"
-
-    def setup(self):
-        success = os.system("docker container restart {}".format(self.emely_id, self.emely_id))
-        if success != 0:
-            os.system("docker run --name {} -d -p 8080:8080 {}".format(self.emely_id, self.emely_id))
-        time.sleep(5)
 
     def act(self, messages):
         # Inputs the conversation array and outputs a response from Emely
@@ -125,13 +130,7 @@ class Emely02(AbstractAgent):
         }
         r = requests.post(self.URL, json=json_obj)
         response = r.json()['text']
-        if len(response) > 128:
-            response = response[0:128]
         return response
-
-    def shutdown(self):
-        os.system("docker container kill {}".format(self.emely_id))
-        time.sleep(5)
 
 
 class Emely03(AbstractAgent):
@@ -139,13 +138,6 @@ class Emely03(AbstractAgent):
         AbstractAgent.__init__(self, agent_id=agent_id, role=role)
         self.URL = "http://localhost:8080/inference"
         self.chat_memory = 6
-        self.emely_id = "emely03"
-
-    def setup(self):
-        success = os.system("docker container restart {}".format(self.emely_id, self.emely_id))
-        if success != 0:
-            os.system("docker run --name {} -d -p 8080:8080 {}".format(self.emely_id, self.emely_id))
-        time.sleep(5)
 
     def act(self, messages):
         # Inputs the conversation array and outputs a response from Emely
@@ -157,13 +149,7 @@ class Emely03(AbstractAgent):
         }
         r = requests.post(self.URL, json=json_obj)
         response = r.json()['text']
-        if len(response) > 128:
-            response = response[0:128]
         return response
-
-    def shutdown(self):
-        os.system("docker container kill {}".format(self.emely_id))
-        time.sleep(5)
 
 
 class Emely04(AbstractAgent):
@@ -171,13 +157,6 @@ class Emely04(AbstractAgent):
         AbstractAgent.__init__(self, agent_id=agent_id, role=role)
         self.URL = "http://localhost:8080/inference"
         self.chat_memory = 6
-        self.emely_id = "emely04"
-
-    def setup(self):
-        success = os.system("docker container restart {}".format(self.emely_id, self.emely_id))
-        if success != 0:
-            os.system("docker run --name {} -d -p 8080:8080 {}".format(self.emely_id, self.emely_id))
-        time.sleep(5)
 
     def act(self, messages):
         # Inputs the conversation array and outputs a response from Emely
@@ -189,13 +168,7 @@ class Emely04(AbstractAgent):
         }
         r = requests.post(self.URL, json=json_obj)
         response = r.json()['text']
-        if len(response) > 128:
-            response = response[0:128]
         return response
-
-    def shutdown(self):
-        os.system("docker container kill {}".format(self.emely_id))
-        time.sleep(5)
 
 
 class Emely05(AbstractAgent):
@@ -203,13 +176,6 @@ class Emely05(AbstractAgent):
         AbstractAgent.__init__(self, agent_id=agent_id, role=role)
         self.URL = "http://localhost:8080/inference"
         self.chat_memory = 6
-        self.emely_id = "emely05"
-
-    def setup(self):
-        success = os.system("docker container restart {}".format(self.emely_id, self.emely_id))
-        if success != 0:
-            os.system("docker run --name {} -d -p 8080:8080 {}".format(self.emely_id, self.emely_id))
-        time.sleep(5)
 
     def act(self, messages):
         # Inputs the conversation array and outputs a response from Emely
@@ -221,13 +187,7 @@ class Emely05(AbstractAgent):
         }
         r = requests.post(self.URL, json=json_obj)
         response = r.json()['text']
-        if len(response) > 128:
-            response = response[0:128]
         return response
-
-    def shutdown(self):
-        os.system("docker container kill {}".format(self.emely_id))
-        time.sleep(5)
 
 
 """ The conversational agents that are currently implemented. This dict is used for interpreting CLI arguments and from

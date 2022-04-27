@@ -80,8 +80,7 @@ class TestWorld:
         conversations that will then be evaluated and pose the grounds for evaluation and examination. """
         for i in range(len(self.testees)):
             testee = self.testees[i]
-            if "emely" in testee.get_id():
-                testee.setup()
+            testee.setup()
             for j in range(self.amount_convs):
                 if config.VERBOSE:
                     print("Initiates conversation {}".format(j + 1))
@@ -90,8 +89,7 @@ class TestWorld:
                 self.conversations.append(conv)
                 if config.VERBOSE:
                     print("Ends conversation {}".format(j + 1))
-            if "emely" in testee.get_id():
-                testee.shutdown()
+            testee.shutdown()
 
     def init_tests(self):
         """ Initiates the evaluation of the conversations produced. """
@@ -115,8 +113,3 @@ class TestWorld:
         self.test_manager.export_results()
         if config.VERBOSE:
             print("Export finished")
-
-    def shutdown_script(self):
-        for gdm in self.testees:
-            if 'emely' in gdm.get_id():
-                gdm.shutdown()
