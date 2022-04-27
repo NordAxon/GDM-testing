@@ -19,7 +19,6 @@ from conversation import Conversation, Message
 from nltk.tokenize import RegexpTokenizer
 
 
-
 class AbstractTestCase(abc.ABC):
     """AbstractTestCase defines an interface for tests that construct a specific conversation.
 
