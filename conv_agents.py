@@ -35,7 +35,9 @@ class AbstractAgent(abc.ABC):
             success = os.system("docker container restart {}".format(self.agent_id, self.agent_id))
             if success != 0:
                 os.system("docker run --name {} -d -p 8080:8080 {}".format(self.agent_id, self.agent_id))
-            time.sleep(5)
+
+            """ Delay added as to make sure the docker is ready to receive requests and produce responses. """
+            time.sleep(8)
 
     def shutdown(self):
         if "emely" in self.agent_id:

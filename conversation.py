@@ -13,9 +13,9 @@ def generate_random_text():
 
     start_str = random.sample(lines, 1)[0].split('\n')[0]
     generator = pipeline('text-generation', model='gpt2')
-    #generated_response = generator(start_str, max_length=30, num_return_sequences=1)[0]['generated_text']
-    generated_response = generator(start_str, num_beams=10, no_repeat_ngram_size=3, do_sample=True, top_p=0.9,
-                                   topk=0)[0]['generated_text']
+    generated_response = generator(start_str, max_length=30, num_return_sequences=1)[0]['generated_text']
+    #generated_response = generator(start_str, num_beams=10, no_repeat_ngram_size=3, do_sample=True, top_p=0.9,
+    #                               topk=0)[0]['generated_text']
     generated_response = generated_response.replace("\n\n", "\n")
     generated_response = generated_response.replace("\n", " ")
     return generated_response
@@ -42,7 +42,22 @@ def set_of_excluded_tokens():
 def count_sentences_within_string(text):
     """ Method for counting how many sentences there are within a text. Based upon the logic that every sentence ends
     with either ".", "!" or "?". """
-    amount_sentences = text.count(".") + text.count("!") + text.count("?")
+    sentence_finisher = [".", "?", "!"]
+    amount_sentences = 0
+
+    for finisher in sentence_finisher:
+        amount_sentences += text.count(finisher)
+
+    """ Splits the text and then checks the last word/token. If it is part of sentence_finisher, then we assume that all
+    sentences of the text has been counted. However, if it is not part of sentence_finisher, we add one. E.g. "Hello! I 
+    am your father" versus "Hello! I am your father!" versus "Hello! I am your father !", which all should be counted as 
+    2 sentences. So basically, it checks whether the last part of the sentence contains any sentence finisher. If it 
+    does not, 1 should be added to the amount. """
+    last_sentence_part = text.split()[-1]
+    for finisher in sentence_finisher:
+        if finisher in last_sentence_part:
+            return amount_sentences
+    amount_sentences += 1
     return amount_sentences
 
 

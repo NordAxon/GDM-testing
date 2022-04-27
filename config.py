@@ -1,7 +1,7 @@
 DEBUG_MODE = True
 VERBOSE = True
 RANDOM_CONV_START = True
-CONV_LENGTH = 2
+CONV_LENGTH = 5
 AMOUNT_CONVS = 2
 CONV_PARTNER = 'blenderbot400m'
 TESTEE = 'emely02,emely03,emely04,emely05'

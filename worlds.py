@@ -31,8 +31,6 @@ class TestWorld:
 
         """ Makes sure to set up the sqlite-database according to the create-tables.sql-file. """
         if config.EXPORT_CHANNEL == "sqlite":
-            print(os.path.exists(aux_functions.db_filename))
-            print(config.OVERWRITE_TABLE)
             if not os.path.exists(aux_functions.db_filename) or config.OVERWRITE_TABLE:
                 if config.VERBOSE:
                     print("Creates new database file. ")
