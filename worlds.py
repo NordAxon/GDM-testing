@@ -1,9 +1,20 @@
+import datetime
 import os
 import aux_functions
 import config
 import conv_agents
 from conversation import Conversation
 from test_manager import TestManager
+
+
+def write_to_txt(testee_gdm_id, text=None):
+    with open("{}.txt".format(testee_gdm_id.get_id()), "a") as f:
+        f.write(text)
+
+
+def setup_txt(testee, conv_partner):
+    write_to_txt(testee_gdm_id=testee, text="testee:{}\nother agent:{}\n####\n".format(testee.get_id(),
+                                                                                       conv_partner.get_id()))
 
 
 class TestWorld:
@@ -28,6 +39,8 @@ class TestWorld:
         """ Loads and instantiates the GDMs. """
         self.conv_partner = conv_agents.load_conv_agent(self.args.get('conv_partner'))[0]
         self.testees = conv_agents.load_conv_agent(self.args.get('tested_gdms'), role='Testee')
+
+        self.datetime_of_run = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
         """ Makes sure to set up the sqlite-database according to the create-tables.sql-file. """
         if config.EXPORT_CHANNEL == "sqlite":
@@ -79,6 +92,8 @@ class TestWorld:
         for i in range(len(self.testees)):
             testee = self.testees[i]
             testee.setup()
+            if config.LOG_CONVERSATION:
+                setup_txt(testee=testee, conv_partner=self.conv_partner)
             for j in range(self.amount_convs):
                 if config.VERBOSE:
                     print("Initiates conversation {}".format(j + 1))

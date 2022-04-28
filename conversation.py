@@ -1,6 +1,7 @@
 import random
 from transformers import pipeline
 import config
+import worlds
 
 
 def generate_random_text():
@@ -72,8 +73,11 @@ class Conversation:
 
         """ Only randomizes conversation start if config.RANDOM_CONV_START is True. """
         if config.RANDOM_CONV_START:
-            self.messages.append(Message(generate_random_text(), 'generator', 'generator'))
+            message = Message(generate_random_text(), 'generator', 'generator')
+            self.messages.append(message)
             print("{}: {}".format('Generated starter', str(self.messages[0])))
+            if config.LOG_CONVERSATION:
+                message.add_to_txt(testee=self.testee)
 
         """ If conv_starter is specified from the CLI, conv_starter is not None and the starter is set according to the
             conv_starter. If it is none, it is randomized with 50/50 probability if testee or conv_partner starts. """
@@ -103,12 +107,18 @@ class Conversation:
                 self.whos_turn is switched to the other conversation partner. """
         for i in range(2 * conv_length):
             message = self.produce_message()
+            if config.LOG_CONVERSATION:
+                message.add_to_txt(testee=self.testee)
             self.messages.append(message)
             self.switch_turn()
+
+        """ To indicate where a conversation ends in the .txt. """
+        if config.LOG_CONVERSATION:
+            worlds.write_to_txt(testee_gdm_id=self.testee, text="####\n")
         return self
 
     def produce_message(self, injected_sent=None):
-        """ Function for producing one message from whos_turn. If injected_sent is not None, then that string may
+        """ Function for producing one message from whose_turn. If injected_sent is not None, then that string may
         override the normal generate response procedure, and take its place."""
 
         if injected_sent is not None:
@@ -185,3 +195,6 @@ class Message:
     def get_role(self):
         """ Function for returning the role of the GDM who produced self. Returns either 'Testee' or 'Other agent'. """
         return self.role
+
+    def add_to_txt(self, testee):
+        worlds.write_to_txt(testee_gdm_id=testee, text="{}:{}\n".format(self.role, self.message))
