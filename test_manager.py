@@ -7,10 +7,10 @@ import tests
 
 implemented_tests = {
     'static_tests': {
-        'MLST7': tests.ToxicContentTest,
-        'MLST2': tests.VocabularySizeTest,
-        'MLST4': tests.CoherentResponseTest,
-        'MLST2TC2': tests.ReadabilityIndexTest
+        'TOX': tests.ToxicContentTest,
+        'VOCSZ': tests.VocabularySizeTest,
+        'COHER': tests.CoherentResponseTest,
+        'READIND': tests.ReadabilityIndexTest
     },
     'injected_tests': {
 
@@ -33,21 +33,17 @@ class TestManager:
         """ Method used for setting up the sqlite-database, which is based upon the table called GDMs. """
         for testee in self.testees:
             cursor = aux_functions.conn.cursor()
-            try:
-                cursor.execute(
-                    """
-                    INSERT
-                    INTO GDMs(gdm_id, date_time)
-                    VALUES (?, ?);
-                    """,
-                    [testee.get_id(), self.datetime.now()]
-                )
+            cursor.execute(
+                """
+                INSERT
+                INTO GDMs(gdm_id, date_time)
+                VALUES (?, ?);
+                """,
+                [testee.get_id(), self.datetime.now()]
+            )
 
-                # Successful insert
-                aux_functions.conn.commit()
-            except sqlite3.Error as er:
-                # Failed insert.
-                print(er)
+            # Successful insert
+            aux_functions.conn.commit()
 
     def init_tests(self):
         """ Central function for initiating all tests. """

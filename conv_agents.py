@@ -31,18 +31,12 @@ class AbstractAgent(abc.ABC):
         return self.role
 
     def setup(self):
-        if "emely" in self.agent_id:
-            success = os.system("docker container restart {}".format(self.agent_id, self.agent_id))
-            if success != 0:
-                os.system("docker run --name {} -d -p 8080:8080 {}".format(self.agent_id, self.agent_id))
-
-            """ Delay added as to make sure the docker is ready to receive requests and produce responses. """
-            time.sleep(8)
+        """ Method used for setting up the GDM, which may differ from GDM to GDM, if necessary at all. """
+        pass
 
     def shutdown(self):
-        if "emely" in self.agent_id:
-            os.system("docker container kill {}".format(self.agent_id))
-            time.sleep(5)
+        """ Method used for shutting down the GDM, which may differ from GDM to GDM, if necessary at all. """
+        pass
 
 # ------- Different conversational agents implemented
 
@@ -64,7 +58,7 @@ class BlenderBot400M(AbstractAgent):
 
     def __init__(self, agent_id, role='Other agent'):
         AbstractAgent.__init__(self, agent_id=agent_id, role=role)
-        self.device = "cpu" #"cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.name = 'facebook/blenderbot-400M-distill'
         self.model = BlenderbotForConditionalGeneration.from_pretrained(self.name).to(self.device)
         self.tokenizer = BlenderbotTokenizer.from_pretrained(self.name)
@@ -97,7 +91,7 @@ class BlenderBot90M(AbstractAgent):
 
     def __init__(self, agent_id, role='Other agent'):
         AbstractAgent.__init__(self, agent_id=agent_id, role=role)
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cpu" #"cuda" if torch.cuda.is_available() else "cpu"
         self.name = 'facebook/blenderbot_small-90M'
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.name).to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(self.name)
@@ -133,6 +127,18 @@ class Emely(AbstractAgent):
         r = requests.post(self.URL, json=json_obj)
         response = r.json()['text']
         return response
+
+    def setup(self):
+        success = os.system("docker container restart {}".format(self.agent_id, self.agent_id))
+        if success != 0:
+            os.system("docker run --name {} -d -p 8080:8080 {}".format(self.agent_id, self.agent_id))
+
+        """ Delay added as to make sure the docker is ready to receive requests and produce responses. """
+        time.sleep(8)
+
+    def shutdown(self):
+        os.system("docker container kill {}".format(self.agent_id))
+        time.sleep(5)
 
 
 """ The conversational agents that are currently implemented. This dict is used for interpreting CLI arguments and from

@@ -4,13 +4,12 @@
 PRAGMA foreign_keys=OFF;
 
 DROP TABLE IF EXISTS GDMs;
-DROP TABLE IF EXISTS MLST;
-DROP TABLE IF EXISTS MLST7_results;
-DROP TABLE IF EXISTS MLST4_results;
-DROP TABLE IF EXISTS MLST2_word_counter;
-DROP TABLE IF EXISTS MLST2_frequency_list;
-DROP TABLE IF EXISTS MLST2_non_frequent_list;
-DROP TABLE IF EXISTS MLST2TC2_results;
+DROP TABLE IF EXISTS test_cases;
+DROP TABLE IF EXISTS TOX_results;
+DROP TABLE IF EXISTS COHER_results;
+DROP TABLE IF EXISTS VOCSZ_frequency_list;
+DROP TABLE IF EXISTS VOCSZ_non_frequent_list;
+DROP TABLE IF EXISTS READIND_results;
 PRAGMA foreign_keys=ON;
 
 -- Create the tables.
@@ -20,7 +19,7 @@ CREATE TABLE GDMs (
     PRIMARY KEY (gdm_id)
 );
 
-CREATE TABLE MLST (
+CREATE TABLE test_cases (
     test_id         TEXT DEFAULT (lower(hex(randomblob(16)))),
     gdm_id          TEXT NOT NULL,
     date_time_run   DATETIME,
@@ -28,7 +27,7 @@ CREATE TABLE MLST (
     FOREIGN KEY     (gdm_id) REFERENCES GDMs(gdm_id)
 );
 
-CREATE TABLE MLST7_results (
+CREATE TABLE TOX_results (
     test_id         TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr        INT NOT NULL,
     toxicity_type   TEXT NOT NULL,
@@ -36,14 +35,14 @@ CREATE TABLE MLST7_results (
     FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
 );
 
-CREATE TABLE MLST4_results (
+CREATE TABLE COHER_results (
     test_id         TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr        INT NOT NULL,
     neg_pred        DOUBLE NOT NULL,
     FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
 );
 
-CREATE TABLE MLST2_frequency_list (
+CREATE TABLE VOCSZ_frequency_list (
     test_id         TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr        INT NOT NULL,
     word            TEXT NOT NULL,
@@ -52,7 +51,7 @@ CREATE TABLE MLST2_frequency_list (
     FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
 );
 
-CREATE TABLE MLST2_non_frequent_list (
+CREATE TABLE VOCSZ_non_frequent_list (
     test_id         TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr        INT NOT NULL,
     word            TEXT NOT NULL,
@@ -60,7 +59,7 @@ CREATE TABLE MLST2_non_frequent_list (
     FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
 );
 
-CREATE TABLE MLST2TC2_results (
+CREATE TABLE READIND_results (
     test_id             TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr            INT NOT NULL,
     readab_index        DOUBLE NOT NULL,

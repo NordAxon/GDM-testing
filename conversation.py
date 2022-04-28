@@ -154,7 +154,7 @@ class Conversation:
         """ Returns the ID of the testee for self (the Conversation-object self). """
         return self.testee.get_id()
 
-    def filter_mgs(self, role: str):
+    def filter_msgs(self, role: str):
         """ Method for converting the list of Messages into a stringifed list of only the messages belonging to the
         role specified as an argument, should it be necessary. """
         stringified_messages = []
@@ -163,7 +163,7 @@ class Conversation:
                 stringified_messages.append(str(message))
         return stringified_messages
 
-    def filter_gdm_preceding_mgs(self):
+    def filter_gdm_preceding_msgs(self):
         """ Method for handling how to filter out the messages that precedess testee's messages. If Testee produced the
         second message, it means that the random generator may have produced the first message. """
         if self.messages[1].get_role() == "Testee":
@@ -173,7 +173,7 @@ class Conversation:
                 filtered_mgs.append(filtered_message)
             return filtered_mgs
         else:
-            return self.filter_mgs("Other agent")
+            return self.filter_msgs("Other agent")
 
 
 class Message:
