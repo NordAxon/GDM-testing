@@ -70,11 +70,6 @@ class AbstractConvTest(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
-    def present(self):
-        """ Specify how the results should be extracted. E.g. to a .csv-file or to a .sqlite-file. """
-        pass
-
 
 # ----------------------- Conversation tests
 """ Below are the implemented conversation tests. """
@@ -114,12 +109,11 @@ class ToxicContentTest(AbstractConvTest, ABC):
         """ Method for returning the id of this test. """
         return self.test_id
 
-    def present(self):
-        """ The way of which the results should be presented through. """
-        if config.EXPORT_CHANNEL == "sqlite":
-            self.present_through_sqlite()
+    def export_dataframe_to_sqlite(self):
+        """ TODO!"""
+        pass
 
-    def present_through_sqlite(self):
+    def export_json_to_sqlite(self):
         """ The method on how to export/present the data using sqlite.
 
             First, it loops over all the GDMs that have been tested, inserting into MLST that that GDM has been tested,
@@ -352,12 +346,7 @@ class VocabularySizeTest(AbstractConvTest, ABC):
             word_array = sentence_array[0].split()
         return word_array
 
-    def present(self):
-        """ Method for presenting the results. """
-        if config.EXPORT_CHANNEL == "sqlite":
-            self.present_through_sqlite()
-
-    def present_through_sqlite(self):
+    def export_json_to_sqlite(self):
         """ Method for specifying how to export/present the results. Loops over the GDMs and per GDM transfers the
         test results into the sqlite-file. """
         for gdm_id in list(self.result_dict.keys()):
@@ -488,11 +477,7 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         e = exp(vector)
         return e / e.sum()
 
-    def present(self):
-        if config.EXPORT_CHANNEL == "sqlite":
-            self.present_through_sqlite()
-
-    def present_through_sqlite(self):
+    def export_json_to_sqlite(self):
         """ Method for exporting/presenting the results of this test into the sqlite-database. Per GDM, it inserts info
         about which test that was performed on which GDM and at what datetime. """
         for gdm_id in list(self.result_dict.keys()):
@@ -579,11 +564,7 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
     def get_id(self):
         return self.test_id
 
-    def present(self):
-        if config.EXPORT_CHANNEL == "sqlite":
-            self.present_through_sqlite()
-
-    def present_through_sqlite(self):
+    def export_json_to_sqlite(self):
         """ Method for transferring the test results into the database. More specifically, it loops over all GDMs, then
         checks per conversation what the different metrics were, and then inserts those into the database. """
         for gdm_id in list(self.result_dict.keys()):
