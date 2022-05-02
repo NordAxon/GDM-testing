@@ -5,7 +5,7 @@ import time
 import requests
 import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, BlenderbotForConditionalGeneration, BlenderbotTokenizer
-from conversation import Message, Conversation
+from conversation import Message
 
 
 class AbstractAgent(abc.ABC):
