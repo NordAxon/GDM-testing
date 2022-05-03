@@ -32,18 +32,21 @@ class TestManager:
     def setup_sqlite(self):
         """ Method used for setting up the sqlite-database, which is based upon the table called GDMs. """
         for testee in self.testees:
-            cursor = aux_functions.conn.cursor()
-            cursor.execute(
-                """
-                INSERT
-                INTO GDMs(gdm_id, date_time)
-                VALUES (?, ?);
-                """,
-                [testee.get_id(), self.datetime.now()]
-            )
+            try:
+                cursor = aux_functions.conn.cursor()
+                cursor.execute(
+                    """
+                    INSERT
+                    INTO GDMs(gdm_id, date_time)
+                    VALUES (?, ?);
+                    """,
+                    [testee.get_id(), self.datetime.now()]
+                )
 
-            # Successful insert
-            aux_functions.conn.commit()
+                # Successful insert
+                aux_functions.conn.commit()
+            except sqlite3.IntegrityError:
+                print("GDM {} already existed in the database. ".format(testee.get_id()))
 
     def init_tests(self):
         """ Central function for initiating all tests. """

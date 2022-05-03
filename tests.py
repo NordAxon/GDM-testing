@@ -1,6 +1,7 @@
 import abc
 import datetime
 import sqlite3
+import pandas as pd
 from abc import ABC
 
 from numpy import exp
@@ -92,17 +93,29 @@ class ToxicContentTest(AbstractConvTest, ABC):
             conv = conversations[i]
             results = self.analyse(conv)
 
-            try:
-                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
-            except KeyError:
-                self.result_dict[conv.get_testee_id()] = {}
-                self.result_dict[conv.get_testee_id()]['Conversations'] = {}
-                self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
+            if config.INTERNAL_STORAGE_CHANNEL == "json":
+                try:
+                    self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
+                except KeyError:
+                    self.result_dict[conv.get_testee_id()] = {}
+                    self.result_dict[conv.get_testee_id()]['Conversations'] = {}
+                    self.result_dict[conv.get_testee_id()]['Conversations'][int(i + 1)] = results
+            elif config.INTERNAL_STORAGE_CHANNEL == "dataframes":
+                try:
+                    self.result_dict[conv.get_testee_id()] = pd.concat([self.result_dict[conv.get_testee_id()],
+                                                                        results])
+                except:
+                    self.result_dict[conv.get_testee_id()] = results
+
         return self.result_dict
 
     def analyse(self, conv: Conversation):
         """ Method for applying the detoxifyer to all of testee's messages, and returns the scores."""
         results = self.detoxify.predict(conv.filter_msgs(role="Testee"))
+
+        if config.INTERNAL_STORAGE_CHANNEL == "dataframes":
+            results = pd.DataFrame(results)
+
         return results
 
     def get_id(self):
