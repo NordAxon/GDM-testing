@@ -32,14 +32,14 @@ CREATE TABLE TOX_results (
     conv_nbr        INT NOT NULL,
     toxicity_type   TEXT NOT NULL,
     toxicity_level  DOUBLE NOT NULL,
-    FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
+    FOREIGN KEY     (test_id) REFERENCES test_cases(test_id)
 );
 
 CREATE TABLE COHER_results (
     test_id         TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr        INT NOT NULL,
     neg_pred        DOUBLE NOT NULL,
-    FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
+    FOREIGN KEY     (test_id) REFERENCES test_cases(test_id)
 );
 
 CREATE TABLE VOCSZ_frequency_list (
@@ -48,7 +48,7 @@ CREATE TABLE VOCSZ_frequency_list (
     word            TEXT NOT NULL,
     word_rank       INT NOT NULL,
     frequency       INT NOT NULL,
-    FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
+    FOREIGN KEY     (test_id) REFERENCES test_cases(test_id)
 );
 
 CREATE TABLE VOCSZ_non_frequent_list (
@@ -56,12 +56,12 @@ CREATE TABLE VOCSZ_non_frequent_list (
     conv_nbr        INT NOT NULL,
     word            TEXT NOT NULL,
     frequency       INT NOT NULL,
-    FOREIGN KEY     (test_id) REFERENCES MLST(test_id)
+    FOREIGN KEY     (test_id) REFERENCES test_cases(test_id)
 );
 
 CREATE TABLE READIND_results (
     test_id             TEXT DEFAULT (lower(hex(randomblob(16)))),
     conv_nbr            INT NOT NULL,
     readab_index        DOUBLE NOT NULL,
-    FOREIGN KEY         (test_id) REFERENCES MLST(test_id)
+    FOREIGN KEY         (test_id) REFERENCES test_cases(test_id)
 );

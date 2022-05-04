@@ -2,13 +2,13 @@ DEBUG_MODE = False
 VERBOSE = True
 RANDOM_CONV_START = True
 CONV_LENGTH = 2
-AMOUNT_CONVS = 2
+AMOUNT_CONVS = 1
 CONV_PARTNER = 'blenderbot90m'
-TESTEE = 'emely02,emely03'
-GENERATE_DIALOGUE = True
+TESTEE = 'emely02'
+READ_FILE_NAME = ""
 CONV_STARTER = ""
-OVERWRITE_TABLE = False
-LOG_CONVERSATION = True
+OVERWRITE_TABLE = True
+LOG_CONVERSATION = False
 
 """ Through which channel should the data be exported. Either one of ["sqlite"]. "sqlite" means writing into a 
 sqlite-table during the test run. Currently only support for sqlite. """

@@ -124,7 +124,9 @@ class ToxicContentTest(AbstractConvTest, ABC):
 
     def export_dataframe_to_sqlite(self):
         """ TODO!"""
-        pass
+        for testee in self.result_dict:
+            result_df = self.result_dict[testee]
+            result_df.to_sql()
 
     def export_json_to_sqlite(self):
         """ The method on how to export/present the data using sqlite.

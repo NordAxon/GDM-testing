@@ -103,7 +103,7 @@ class TestManager:
                     print("Finished. The export took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}"
                           .format(end_time_export, end_time_export / 60, end_time_export / (60 ** 2),
                                   self.datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
-            except:
+            except NameError:
                 print("An error occurred with the export of test case {}. Continues with next. ".format(test_case))
 
     @staticmethod

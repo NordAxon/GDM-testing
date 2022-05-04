@@ -65,7 +65,7 @@ def count_sentences_within_string(text):
 class Conversation:
     """Class for keeping track of a conversation, which includes several messages"""
 
-    def __init__(self, testee, conv_partner, conv_starter=None):
+    def __init__(self, testee, conv_partner, conv_starter=""):
         self.messages = []
         self.whose_turn = ""
         self.testee = testee
@@ -117,16 +117,17 @@ class Conversation:
             worlds.write_to_txt(testee_gdm_id=self.testee, text="####\n")
         return self
 
-    def produce_message(self, injected_sent=None):
+    def produce_message(self, injected_sent=None, injected_sent_id=None, injected_sent_role=None):
         """ Function for producing one message from whose_turn. If injected_sent is not None, then that string may
         override the normal generate response procedure, and take its place."""
 
         if injected_sent is not None:
-            message = Message(message=injected_sent, agent_id=self.whose_turn.get_id(), role=self.whose_turn.get_role())
+            message = Message(message=injected_sent, agent_id=injected_sent_id, role=injected_sent_role)
+            print("{}: {}".format(injected_sent_role, str(message))) if config.VERBOSE else print()
         else:
             message = Message(self.whose_turn.act(self.str_conversation()), self.whose_turn.get_id(),
                               role=self.whose_turn.get_role())
-        print("{}: {}".format(self.whose_turn.get_role(), str(message))) if config.VERBOSE else print()
+            print("{}: {}".format(self.whose_turn.get_role(), str(message))) if config.VERBOSE else print()
         return message
 
     def switch_turn(self):
@@ -145,10 +146,15 @@ class Conversation:
         """ Returns list of messages. """
         return self.messages
 
-    def conv_from_file(self, lines):
+    def conv_from_file(self, list_of_msgs_str: list, testee, conv_partner):
         """ Work in progress. """
-        for i in range(len(lines)):
-            self.messages[i] = lines[i]
+        for message in list_of_msgs_str:
+            gdm_role, sentence = message.split(":")
+            gdm_id = testee.get_id() if gdm_role.lower() == "testee" else conv_partner.get_id()
+            new_message = self.produce_message(injected_sent=sentence, injected_sent_id=gdm_id, injected_sent_role=gdm_role)
+            self.messages.append(new_message)
+            self.switch_turn()
+        return self
 
     def get_testee_id(self):
         """ Returns the ID of the testee for self (the Conversation-object self). """

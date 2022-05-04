@@ -13,11 +13,11 @@ def debug_script_setup():
     args['amount_convs'] = config.AMOUNT_CONVS
     args['conv_partner'] = config.CONV_PARTNER
     args['tested_gdms'] = config.TESTEE
-    args['gen_dialog'] = config.GENERATE_DIALOGUE
     args['conv_starter'] = config.CONV_STARTER
     args['verbose'] = config.VERBOSE
     args['export_channel'] = config.EXPORT_CHANNEL
-    args["gen_dialog"] = config.GENERATE_DIALOGUE
+    args["internal_storage"] = config.INTERNAL_STORAGE_CHANNEL
+    args["read_file_name"] = config.READ_FILE_NAME
     return args
 
 
