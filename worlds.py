@@ -29,6 +29,7 @@ class TestWorld:
             config.INTERNAL_STORAGE_CHANNEL = self.args.get('internal_storage')
             config.EXPORT_CHANNEL = self.args.get('export_channel')
             config.READ_FILE_NAME = self.args.get('read_file_name')
+            config.OVERWRITE_TABLE = self.args.get('overwrite_table')
         else:
             self.args = args
 
@@ -86,7 +87,7 @@ class TestWorld:
                             help="The path to the file you want to read into the script. Interprets the letters behind "
                                  "the '.' as the file type. No input is interpreted as such the script generates "
                                  "conversations using the GDMs. Currently only miscellaneous .txt-files are supported.")
-        parser.add_argument('-ot', '--overwrite-table', action="store_true", default=True, help="Should the current "
+        parser.add_argument('-ot', '--overwrite-table', action="store_true", default=False, help="Should the current "
                                  "table be overwritten or should the results be inserted into the currently existing "
                                  "one. True for creating a new table, False for inserting into the currently existing "
                                  "database-file. Defaults to True. ")
