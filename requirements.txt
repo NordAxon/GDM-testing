@@ -1,4 +1,6 @@
-torch
-torchaudio
-torchvision
-transformers~=4.17.0.dev0
+detoxify==0.4.0
+numpy==1.22.2
+requests==2.27.1
+torch==1.10.2+cu102
+transformers==4.17.0
+nltk~=3.7
