@@ -1,6 +1,8 @@
-detoxify==0.4.0
+detoxify~=0.5.0
 numpy==1.22.2
 requests==2.27.1
 torch==1.10.2+cu102
-transformers==4.17.0
+transformers~=4.11.3
 nltk~=3.7
+pandas~=1.4.2
+sqlalchemy~=1.4.32
