@@ -50,13 +50,6 @@ class TestWorld:
         self.conversations = []
         self.datetime_of_run = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-        """ Makes sure to set up the sqlite-database according to the create-tables.sql-file. """
-        if config.EXPORT_CHANNEL == "sqlite":
-            if not os.path.exists(aux_functions.db_filename) or config.OVERWRITE_TABLE:
-                if config.VERBOSE:
-                    print("Creates new database file. ")
-                os.system("sqlite3 {} < create-tables.sql".format(aux_functions.db_filename))
-
     @staticmethod
     def add_to_argparse(parser):
         """ argparse for parsing the input from the CLI. """
