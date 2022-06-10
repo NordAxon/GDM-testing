@@ -11,7 +11,5 @@ if config.EXPORT_CHANNEL == "sqlite":
     if not os.path.exists(db_filename) or config.OVERWRITE_TABLE:
         if config.VERBOSE:
             print("Creating new database file.")
-        os.system(
-            "sqlite3 {} < create-tables.sql".format(db_filename)
-        )
+        os.system("sqlite3 {} < create-tables.sql".format(db_filename))
     conn = sqlite3.connect(db_path)
