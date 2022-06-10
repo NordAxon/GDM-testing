@@ -125,7 +125,7 @@ class Conversation:
 
         """ To indicate where a conversation ends in the .txt. """
         if config.LOG_CONVERSATION:
-            worlds.write_to_txt(testee_gdm_id=self.testee, text="####\n")
+            worlds.write_to_txt(testee_gdm_id=self.testee.get_id(), text="####\n")
         return self
 
     def produce_message(
@@ -269,6 +269,7 @@ class Message:
 
     def add_to_txt(self, testee):
         worlds.write_to_txt(
-            testee_gdm_id=testee, text="{}:{}\n".format(self.role, self.message)
+            testee_gdm_id=testee.get_id(),
+            text="{}:{}\n".format(self.role, self.message),
         )
 

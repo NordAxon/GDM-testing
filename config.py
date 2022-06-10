@@ -7,7 +7,7 @@ CONV_PARTNER = "blenderbot400m"
 TESTEE = "emely05"
 READ_FILE_NAME = ""
 CONV_STARTER = ""
-OVERWRITE_TABLE = True
+OVERWRITE_TABLE = False
 LOG_CONVERSATION = True
 
 """ Through which channel should the data be exported. Either one of ["sqlite"]. "sqlite" means writing into a 

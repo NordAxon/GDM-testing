@@ -138,3 +138,4 @@ general.py
 test_results.sqlite
 test_results/
 test_results/
+conversation_logs/

@@ -5,16 +5,22 @@ import config
 import conv_agents
 from conversation import Conversation, InterviewConversation
 from test_manager import TestManager
+from pathlib import Path
+
+# Folder to store conversation logs
+log_path = Path(__file__).parent / "conversation_logs"
+log_path.mkdir(exist_ok=True)
 
 
-def write_to_txt(testee_gdm_id, text=None):
-    with open("{}.txt".format(testee_gdm_id.get_id()), "a") as f:
+def write_to_txt(testee_gdm_id, text):
+    file = log_path / f"{testee_gdm_id}.txt"
+    with open(file, "a") as f:
         f.write(text)
 
 
 def setup_txt(testee, conv_partner):
     write_to_txt(
-        testee_gdm_id=testee,
+        testee_gdm_id=testee.get_id(),
         text="testee:{}\nother agent:{}\n####\n".format(
             testee.get_id(), conv_partner.get_id()
         ),

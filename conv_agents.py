@@ -171,7 +171,15 @@ class Emely(AbstractAgent):
         exists = True
         if subprocess.run(["docker", "restart", self.agent_id]).returncode:
             if subprocess.run(
-                ["docker", "run", "--name", self.agent_id, self.agent_id]
+                [
+                    "docker",
+                    "run",
+                    "--name",
+                    "-p",
+                    "8080:8080",
+                    self.agent_id,
+                    self.agent_id,
+                ]
             ).returncode:
                 exists = False
 
