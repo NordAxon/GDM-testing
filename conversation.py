@@ -3,20 +3,31 @@ from transformers import pipeline
 import config
 import worlds
 
+interview_questions = []
+
+with open("questions.txt", "r", encoding="utf-8") as f:
+    interview_questions = f.read().split("\n")
+
 
 def generate_random_text():
     """ Sets up a text generator for initiating conversations randomly. Returns a randomized string starting with
     start_str """
 
     # Reads conversation starters from the conv-starters.txt-file and samples one from them randomly.
-    with open('miscellaneous .txt-files/conv-starters.txt') as f:
+    with open("miscellaneous .txt-files/conv-starters.txt") as f:
         lines = f.readlines()
 
-    start_str = random.sample(lines, 1)[0].split('\n')[0]
-    generator = pipeline('text-generation', model='gpt2')
-    #generated_response = generator(start_str, max_length=30, num_return_sequences=1)[0]['generated_text']
-    generated_response = generator(start_str, num_beams=10, no_repeat_ngram_size=3, do_sample=True, top_p=0.9,
-                                   topk=0)[0]['generated_text']
+    start_str = random.sample(lines, 1)[0].split("\n")[0]
+    generator = pipeline("text-generation", model="gpt2")
+    # generated_response = generator(start_str, max_length=30, num_return_sequences=1)[0]['generated_text']
+    generated_response = generator(
+        start_str,
+        num_beams=10,
+        no_repeat_ngram_size=3,
+        do_sample=True,
+        top_p=0.9,
+        topk=0,
+    )[0]["generated_text"]
     generated_response = generated_response.replace("\n\n", "\n")
     generated_response = generated_response.replace("\n", " ")
     return generated_response
@@ -34,7 +45,7 @@ def clean_from_excluded_tokens(sentence):
 def set_of_excluded_tokens():
     """ Method for reading the excluded tokens that are tokens that should be disregarded. They are specified in
     miscellaneous .txt-files/excluded_tokens.txt. """
-    with open('miscellaneous .txt-files/excluded_tokens.txt') as f:
+    with open("miscellaneous .txt-files/excluded_tokens.txt") as f:
         lines = f.readlines()
     lines = [elem.replace("\n", "") for elem in lines]
     return lines
@@ -73,9 +84,9 @@ class Conversation:
 
         """ Only randomizes conversation start if config.RANDOM_CONV_START is True. """
         if config.RANDOM_CONV_START:
-            message = Message(generate_random_text(), 'generator', 'generator')
+            message = Message(generate_random_text(), "generator", "generator")
             self.messages.append(message)
-            print("{}: {}".format('Generated starter', str(self.messages[0])))
+            print("{}: {}".format("Generated starter", str(self.messages[0])))
             if config.LOG_CONVERSATION:
                 message.add_to_txt(testee=self.testee)
 
@@ -117,23 +128,39 @@ class Conversation:
             worlds.write_to_txt(testee_gdm_id=self.testee, text="####\n")
         return self
 
-    def produce_message(self, injected_sent=None, injected_sent_id=None, injected_sent_role=None):
+    def produce_message(
+        self, injected_sent=None, injected_sent_id=None, injected_sent_role=None
+    ):
         """ Function for producing one message from whose_turn. If injected_sent is not None, then that string may
         override the normal generate response procedure, and take its place."""
 
         if injected_sent is not None:
-            message = Message(message=injected_sent, agent_id=injected_sent_id, role=injected_sent_role)
-            print("{}: {}".format(injected_sent_role, str(message))) if config.VERBOSE else print()
+            message = Message(
+                message=injected_sent,
+                agent_id=injected_sent_id,
+                role=injected_sent_role,
+            )
+            print(
+                "{}: {}".format(injected_sent_role, str(message))
+            ) if config.VERBOSE else print()
         else:
-            message = Message(self.whose_turn.act(self.str_conversation()), self.whose_turn.get_id(),
-                              role=self.whose_turn.get_role())
-            print("{}: {}".format(self.whose_turn.get_role(), str(message))) if config.VERBOSE else print()
+            message = Message(
+                self.whose_turn.act(self.str_conversation()),
+                self.whose_turn.get_id(),
+                role=self.whose_turn.get_role(),
+            )
+            print(
+                "{}: {}".format(self.whose_turn.get_role(), str(message))
+            ) if config.VERBOSE else print()
         return message
 
     def switch_turn(self):
         """ Function for switching the turn to the agent that did not produce the last response. """
-        self.whose_turn = self.testee if self.whose_turn.get_role() == self.conv_partner.get_role() \
+        self.whose_turn = (
+            self.testee
+            if self.whose_turn.get_role() == self.conv_partner.get_role()
             else self.conv_partner
+        )
 
     def str_conversation(self):
         """ Method for converting the list of Messages into a list of strings, so that it is printable. """
@@ -150,8 +177,16 @@ class Conversation:
         """ Work in progress. """
         for message in list_of_msgs_str:
             gdm_role, sentence = message.split(":")
-            gdm_id = testee.get_id() if gdm_role.lower() == "testee" else conv_partner.get_id()
-            new_message = self.produce_message(injected_sent=sentence, injected_sent_id=gdm_id, injected_sent_role=gdm_role)
+            gdm_id = (
+                testee.get_id()
+                if gdm_role.lower() == "testee"
+                else conv_partner.get_id()
+            )
+            new_message = self.produce_message(
+                injected_sent=sentence,
+                injected_sent_id=gdm_id,
+                injected_sent_role=gdm_role,
+            )
             self.messages.append(new_message)
             self.switch_turn()
         return self
@@ -182,6 +217,36 @@ class Conversation:
             return self.filter_msgs("Other agent")
 
 
+class InterviewConversation(Conversation):
+    """ Specific Interview implementaiton
+    """
+
+    def __init__(self, testee, conv_partner):
+        # conv_starter = "Testee"
+        self.messages = []
+        self.testee = testee
+        self.conv_partner = conv_partner
+
+        " Initiate the conversation with a random interview question "
+
+        """ Only randomizes conversation start if config.RANDOM_CONV_START is True. """
+        message = Message(
+            get_interview_question(), "question_generator", "question_generator"
+        )
+        self.messages.append(message)
+        print("{}: {}".format("Starter question", str(self.messages[0])))
+        if config.LOG_CONVERSATION:
+            message.add_to_txt(testee=self.testee)
+
+        self.whose_turn = conv_partner
+
+
+def get_interview_question():
+    "Gets a random element from a list of interview questions"
+    assert len(interview_questions) > 0
+    return random.sample(interview_questions, 1)[0]
+
+
 class Message:
     """ Class for controlling the properties of every Message"""
 
@@ -203,4 +268,7 @@ class Message:
         return self.role
 
     def add_to_txt(self, testee):
-        worlds.write_to_txt(testee_gdm_id=testee, text="{}:{}\n".format(self.role, self.message))
+        worlds.write_to_txt(
+            testee_gdm_id=testee, text="{}:{}\n".format(self.role, self.message)
+        )
+

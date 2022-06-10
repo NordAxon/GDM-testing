@@ -3,7 +3,7 @@ import os
 import aux_functions
 import config
 import conv_agents
-from conversation import Conversation
+from conversation import Conversation, InterviewConversation
 from test_manager import TestManager
 
 
@@ -13,8 +13,12 @@ def write_to_txt(testee_gdm_id, text=None):
 
 
 def setup_txt(testee, conv_partner):
-    write_to_txt(testee_gdm_id=testee, text="testee:{}\nother agent:{}\n####\n".format(testee.get_id(),
-                                                                                       conv_partner.get_id()))
+    write_to_txt(
+        testee_gdm_id=testee,
+        text="testee:{}\nother agent:{}\n####\n".format(
+            testee.get_id(), conv_partner.get_id()
+        ),
+    )
 
 
 class TestWorld:
@@ -25,23 +29,27 @@ class TestWorld:
     def __init__(self, args):
         if not config.DEBUG_MODE:
             self.args = vars(args)
-            config.VERBOSE = self.args.get('verbose')
-            config.INTERNAL_STORAGE_CHANNEL = self.args.get('internal_storage')
-            config.EXPORT_CHANNEL = self.args.get('export_channel')
-            config.READ_FILE_NAME = self.args.get('read_file_name')
-            config.OVERWRITE_TABLE = self.args.get('overwrite_table')
+            config.VERBOSE = self.args.get("verbose")
+            config.INTERNAL_STORAGE_CHANNEL = self.args.get("internal_storage")
+            config.EXPORT_CHANNEL = self.args.get("export_channel")
+            config.READ_FILE_NAME = self.args.get("read_file_name")
+            config.OVERWRITE_TABLE = self.args.get("overwrite_table")
         else:
             self.args = args
 
         """ Settings that should only be set up as long as the conversations should be generated and not read. """
         if config.READ_FILE_NAME == "":
-            self.conv_length = self.args.get('length_conv_round', config.CONV_LENGTH)
-            self.amount_convs = self.args.get('amount_convs', config.AMOUNT_CONVS)
-            self.conv_starter = self.args.get('conv_starter')
+            self.conv_length = self.args.get("length_conv_round", config.CONV_LENGTH)
+            self.amount_convs = self.args.get("amount_convs", config.AMOUNT_CONVS)
+            self.conv_starter = self.args.get("conv_starter")
 
             """ Loads and instantiates the GDMs. """
-            self.conv_partner = conv_agents.load_conv_agent(self.args.get('conv_partner'))[0]
-            self.testees = conv_agents.load_conv_agent(self.args.get('tested_gdms'), role='Testee')
+            self.conv_partner = conv_agents.load_conv_agent(
+                self.args.get("conv_partner")
+            )[0]
+            self.testees = conv_agents.load_conv_agent(
+                self.args.get("tested_gdms"), role="Testee"
+            )
         else:
             config.RANDOM_CONV_START = False
             config.LOG_CONVERSATION = False
@@ -53,37 +61,103 @@ class TestWorld:
     @staticmethod
     def add_to_argparse(parser):
         """ argparse for parsing the input from the CLI. """
-        parser.add_argument('-l', '--length-conv-round', metavar='', type=int, default=config.CONV_LENGTH,
-                            help="How many rounds shall there be per "
-                                 "conversation until restart")
-        parser.add_argument('-a', '--amount-convs', metavar='', type=int, default=config.AMOUNT_CONVS,
-                            help="How many conversations shall there be per tested GDM")
-        parser.add_argument('-t', '--tested-gdms', metavar='', type=str, default=config.TESTEE,
-                            help="Write one or several GDMs you want to test. "
-                                 "If several, have them separated by ','. ")
-        parser.add_argument('-cp', '--conv-partner', metavar='', type=str, default=config.CONV_PARTNER,
-                            help="Specify which GDM to test your GDM against")
-        parser.add_argument('-ec', '--export-channel', metavar='', type=str, default=config.EXPORT_CHANNEL,
-                            help="Specify which channel to export the results through. Currently only 'sqlite' "
-                                 "is implemented""")
-        parser.add_argument('-is', '--internal-storage', metavar='', type=str, default=config.INTERNAL_STORAGE_CHANNEL,
-                            help="Specify which channel to use for the internal storage of results. Currently only "
-                                 "'json' is implemented. """)
-        parser.add_argument('-v', '--verbose', action="store_true", default=True,
-                            help="True: The script prints out what happens so that the user may follow the process. "
-                                 "False: A silent run of the script where nothing is printed. Defaults to True.")
-        parser.add_argument('-cs', '--conv-starter', metavar='', type=str, default='',
-                            help="Testee: testee initiates every conversation. Conv-partner: the conversation partner "
-                                 "initiates all conversations. Not specified: 50-50 per conversation who starts that "
-                                 "conversation.")
-        parser.add_argument('-rf', '--read-file-name', metavar='', type=str, default=config.READ_FILE_NAME,
-                            help="The path to the file you want to read into the script. Interprets the letters behind "
-                                 "the '.' as the file type. No input is interpreted as such the script generates "
-                                 "conversations using the GDMs. Currently only miscellaneous .txt-files are supported.")
-        parser.add_argument('-ot', '--overwrite-table', action="store_true", default=False, help="Should the current "
-                                 "table be overwritten or should the results be inserted into the currently existing "
-                                 "one. True for creating a new table, False for inserting into the currently existing "
-                                 "database-file. Defaults to True. ")
+        parser.add_argument(
+            "-l",
+            "--length-conv-round",
+            metavar="",
+            type=int,
+            default=config.CONV_LENGTH,
+            help="How many rounds shall there be per " "conversation until restart",
+        )
+        parser.add_argument(
+            "-a",
+            "--amount-convs",
+            metavar="",
+            type=int,
+            default=config.AMOUNT_CONVS,
+            help="How many conversations shall there be per tested GDM",
+        )
+        parser.add_argument(
+            "-t",
+            "--tested-gdms",
+            metavar="",
+            type=str,
+            default=config.TESTEE,
+            help="Write one or several GDMs you want to test. "
+            "If several, have them separated by ','. ",
+        )
+        parser.add_argument(
+            "-cp",
+            "--conv-partner",
+            metavar="",
+            type=str,
+            default=config.CONV_PARTNER,
+            help="Specify which GDM to test your GDM against",
+        )
+        parser.add_argument(
+            "-ec",
+            "--export-channel",
+            metavar="",
+            type=str,
+            default=config.EXPORT_CHANNEL,
+            help="Specify which channel to export the results through. Currently only 'sqlite' "
+            "is implemented"
+            "",
+        )
+        parser.add_argument(
+            "-is",
+            "--internal-storage",
+            metavar="",
+            type=str,
+            default=config.INTERNAL_STORAGE_CHANNEL,
+            help="Specify which channel to use for the internal storage of results. Currently only "
+            "'json' is implemented. "
+            "",
+        )
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            action="store_true",
+            default=True,
+            help="True: The script prints out what happens so that the user may follow the process. "
+            "False: A silent run of the script where nothing is printed. Defaults to True.",
+        )
+        parser.add_argument(
+            "-cs",
+            "--conv-starter",
+            metavar="",
+            type=str,
+            default="",
+            help="Testee: testee initiates every conversation. Conv-partner: the conversation partner "
+            "initiates all conversations. Not specified: 50-50 per conversation who starts that "
+            "conversation.",
+        )
+        parser.add_argument(
+            "-rf",
+            "--read-file-name",
+            metavar="",
+            type=str,
+            default=config.READ_FILE_NAME,
+            help="The path to the file you want to read into the script. Interprets the letters behind "
+            "the '.' as the file type. No input is interpreted as such the script generates "
+            "conversations using the GDMs. Currently only miscellaneous .txt-files are supported.",
+        )
+        parser.add_argument(
+            "-ot",
+            "--overwrite-table",
+            action="store_true",
+            default=False,
+            help="Should the current "
+            "table be overwritten or should the results be inserted into the currently existing "
+            "one. True for creating a new table, False for inserting into the currently existing "
+            "database-file. Defaults to True. ",
+        )
+        parser.add_argument(
+            "--interview-mode",
+            action="store_true",
+            default=False,
+            help="Conversations are initialized as interview scenarios",
+        )
 
     def init_conversations(self):
         """ Initiates the conversation. Aims to have a consistent conversation partner conv_partner, with whom each of
@@ -103,7 +177,16 @@ class TestWorld:
             for j in range(self.amount_convs):
                 if config.VERBOSE:
                     print("Initiates conversation {}".format(j + 1))
-                conv = Conversation(testee=testee, conv_partner=self.conv_partner, conv_starter=self.conv_starter)
+                if self.args["interview_mode"]:
+                    conv = InterviewConversation(
+                        testee=testee, conv_partner=self.conv_partner
+                    )
+                else:
+                    conv = Conversation(
+                        testee=testee,
+                        conv_partner=self.conv_partner,
+                        conv_starter=self.conv_starter,
+                    )
                 conv = conv.initiate_conversation(self.conv_length)
                 self.conversations.append(conv)
                 if config.VERBOSE:
@@ -112,7 +195,9 @@ class TestWorld:
 
     def init_tests(self):
         """ Initiates the evaluation of the conversations produced. """
-        self.test_manager = TestManager(list_testees=self.testees, conversations=self.conversations)
+        self.test_manager = TestManager(
+            list_testees=self.testees, conversations=self.conversations
+        )
         self.test_manager.init_tests()
 
     def read_file(self, file_path: str, file_type: str) -> list:
@@ -129,7 +214,9 @@ class TestWorld:
                 conv_partner. """
                 testee = conv_agents.load_conv_agent(testee_str, role="Testee")[0]
                 self.testees = [testee]
-                conv_partner = conv_agents.load_conv_agent(conv_partner_str, role="Other agent")[0]
+                conv_partner = conv_agents.load_conv_agent(
+                    conv_partner_str, role="Other agent"
+                )[0]
                 self.conv_partner = conv_partner
 
                 """ Pops all the first elements until the separator '####' is found, due to them being informational 
@@ -143,7 +230,11 @@ class TestWorld:
 
                 for conversation in lines:
                     conv = Conversation(testee=testee, conv_partner=conv_partner)
-                    conv.conv_from_file(list_of_msgs_str=conversation, testee=testee, conv_partner=conv_partner)
+                    conv.conv_from_file(
+                        list_of_msgs_str=conversation,
+                        testee=testee,
+                        conv_partner=conv_partner,
+                    )
                     self.conversations.append(conv)
         return self.conversations
 
