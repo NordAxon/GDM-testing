@@ -13,7 +13,7 @@ git clone https://github.com/JoohanBengtsson/GDM-testing
 # install project   
 cd GDM-testing
 pip install -e .   
-pip install -r requirements.txt
+pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
  ```   
  Next, navigate to any file and run it.   
  ```bash
