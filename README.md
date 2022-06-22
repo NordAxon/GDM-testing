@@ -4,7 +4,9 @@
 This is the test framework developed in the Master's Thesis Project *Quality Measurement of Generative Dialogue Models for Language Practice*, conducted at the Computer Science institution at the Faculty of Engineering at Lund University, Sweden.
 
 
-## How to run   
+## How to ...
+
+### ... run the test framework to produce and exports results to the SQLite-file
 First, install dependencies   
 ```bash
 # clone project   
@@ -58,6 +60,14 @@ optional arguments:
                         database-file. Defaults to True.
 ```
 
+### ... visualise the results from the SQLite-file
+
+1. Set up a Grafana-server
+2. Hold over the '+'-sign corresponding to the 'Create' menu. There, click import.
+3. In the box "Import via panel json", paste in the dashboard-json which can be found in the repository, and click load.
+4. Then, hold over the 'Gear'-icon on the left to show the "Configuration". There, click "Data sources"
+5. There click "Add data source" and add the path to your SQLite-file, which by default is located in your local repository.
+6. When you have added the data source, the dashboard should visualise all the implemented test case results. You are also free to make new figures, to which you can fetch data from the SQLite-file by doing SQLite-queries through Grafana.
 
 ### Citation   
 ```
