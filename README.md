@@ -62,7 +62,7 @@ optional arguments:
 
 ### ... visualise the results from the SQLite-file
 
-1. Set up a Grafana-server
+1. Install and set up a Grafana-server. More information about that can be found here: https://grafana.com/docs/grafana/latest/setup-grafana/installation/.
 2. Hold over the '+'-sign corresponding to the 'Create' menu. In the shown menu, click 'Import'.
 3. In the box "Import via panel json", paste in the dashboard-json which can be found in the repository in the file 'dashboard-json.tex', and click load.
 4. Then, hold over the 'Gear'-icon on the left to show the "Configuration". There, click "Data sources"
