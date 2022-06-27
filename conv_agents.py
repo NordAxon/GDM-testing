@@ -175,9 +175,9 @@ class Emely(AbstractAgent):
                     "docker",
                     "run",
                     "--name",
+                    self.agent_id,
                     "-p",
                     "8080:8080",
-                    self.agent_id,
                     self.agent_id,
                 ]
             ).returncode:
