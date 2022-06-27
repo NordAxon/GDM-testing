@@ -56,6 +56,7 @@ optional arguments:
                         Should the current table be overwritten or should the results be inserted into the currently
                         existing one. True for creating a new table, False for inserting into the currently existing
                         database-file. Defaults to True.
+  --interview-mode      All conversations start with a random interview-question 
 ```
 
 
