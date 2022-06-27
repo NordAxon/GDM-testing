@@ -174,6 +174,7 @@ class Emely(AbstractAgent):
                 [
                     "docker",
                     "run",
+                    "-d",
                     "--name",
                     self.agent_id,
                     "-p",

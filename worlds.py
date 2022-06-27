@@ -49,6 +49,9 @@ class TestWorld:
             self.amount_convs = self.args.get("amount_convs", config.AMOUNT_CONVS)
             self.conv_starter = self.args.get("conv_starter")
 
+            # Kill all running containers
+            os.system("docker kill $(docker ps -q)")
+
             """ Loads and instantiates the GDMs. """
             self.conv_partner = conv_agents.load_conv_agent(
                 self.args.get("conv_partner")
