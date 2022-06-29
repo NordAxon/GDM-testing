@@ -32,6 +32,7 @@ Parser for setting up the script as you want
 
 optional arguments:
   -h, --help            show this help message and exit
+  --interview-mode      All conversations start with a random interview-question
   -l , --length-conv-round
                         How many rounds shall there be per conversation until restart
   -a , --amount-convs   How many conversations shall there be per tested GDM
@@ -56,7 +57,6 @@ optional arguments:
                         Should the current table be overwritten or should the results be inserted into the currently
                         existing one. True for creating a new table, False for inserting into the currently existing
                         database-file. Defaults to True.
-  --interview-mode      All conversations start with a random interview-question 
 ```
 
 
