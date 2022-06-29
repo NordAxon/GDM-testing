@@ -176,7 +176,7 @@ class Conversation:
     def conv_from_file(self, list_of_msgs_str: list, testee, conv_partner):
         """ Work in progress. """
         for message in list_of_msgs_str:
-            gdm_role, sentence = message.split(":")
+            gdm_role, sentence = message.split(":", maxsplit=1)
             gdm_id = (
                 testee.get_id()
                 if gdm_role.lower() == "testee"
