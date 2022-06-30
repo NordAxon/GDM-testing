@@ -560,7 +560,7 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
         """ Loops over all messages, and per message it stores the amount of sentences, the amount of words and the 
         amount of words greater than six. Then, the readability index is calculated according to a formula."""
         for message in conv:
-            if message.get_role() == 'Testee':
+            if message.get_role() == 'testee':
                 results['amount_sentences'] += conversation.count_sentences_within_string(str(message))
                 for word in str(message).split():
                     word = conversation.clean_from_excluded_tokens(word)

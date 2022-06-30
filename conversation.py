@@ -199,8 +199,9 @@ class Conversation:
         """ Method for converting the list of Messages into a stringifed list of only the messages belonging to the
         role specified as an argument, should it be necessary. """
         stringified_messages = []
+        role = role.lower()
         for message in self.messages:
-            if message.get_role() == role:
+            if message.get_role().lower() == role:
                 stringified_messages.append(str(message))
         return stringified_messages
 
@@ -265,7 +266,7 @@ class Message:
 
     def get_role(self):
         """ Function for returning the role of the GDM who produced self. Returns either 'Testee' or 'Other agent'. """
-        return self.role
+        return self.role.lower()
 
     def add_to_txt(self, testee):
         worlds.write_to_txt(
