@@ -1,30 +1,34 @@
 # Generative Dialogue Model Automatic Quality Assurance tool
 
-## Description   
+## Description
 This is the test framework developed in the Master's Thesis Project *Quality Measurement of Generative Dialogue Models for Language Practice*, conducted at the Computer Science institution at the Faculty of Engineering at Lund University, Sweden.
 
 
-## How to run   
-First, install dependencies   
-```bash
-# clone project   
+## How to run
+First, install dependencies
+
+```
+# clone project
 git clone https://github.com/JoohanBengtsson/GDM-testing
 
-# install project   
+# install project
 cd GDM-testing
-pip install -e .   
+pip install -e .
 pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
- ```   
- Next, navigate to any file and run it.   
- ```bash
-
-# run module   
-python main.py <OPTIONS> [PARAMETERS]    
 ```
+ ```   
+```
+
+The testing is run by:
+
+```
+# run module
+python main.py <OPTIONS> [PARAMETERS]
+```
+
 Where several options are available and needed, as to fit your sought for set up of GDMs. Run `python main.py -h` to have the options presented, or read below:
 
-```bash
-
+```
 # options available
 usage: main.py [-h] [-l] [-a] [-t] [-cp] [-ec] [-is] [-v] [-cs] [-rf] [-ot]
 
@@ -59,6 +63,16 @@ optional arguments:
                         database-file. Defaults to True.
 ```
 
+### Visualise the results from the SQLite-file
+
+1. Install and set up a Grafana-server. More information about that can be found here: https://grafana.com/docs/grafana/latest/setup-grafana/installation/.
+2. Log in with username: admin, password: admin on localhost:3000 and choose a new password.
+3. Install the SQLite plugin from settings/plugins.
+3. Hold over the '+'-sign corresponding to the 'Create' menu. In the shown menu, click 'Import'.
+4. In the box "Import via panel json", paste in the dashboard-json which can be found in the repository in the file 'dashboard-json.tex', and click load.
+5. Then, hold over the 'Gear'-icon on the left to show the "Configuration". There, click "Data sources"
+6. There click "Add data source" and add the path to your SQLite-file, which by default is located in your local repository.
+7. When you have added the data source, the dashboard should visualise all the implemented test case results. You are also free to make new figures, to which you can fetch data from the SQLite-file by doing SQLite-queries through Grafana.
 
 ### Citation   
 ```
@@ -67,7 +81,7 @@ optional arguments:
   author={Johan Bengtsson},
   year={2022}
 }
-```   
+```
 
 ![](imgs/Test%20architecture.drawio.png)
 The proposed architecture as of now for the test framework.

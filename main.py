@@ -3,11 +3,11 @@ import time
 import datetime
 
 import config
-import worlds
+import src.worlds as worlds
 
 
 def debug_script_setup():
-    """ If Config.DEBUG is True, the following settings are used for setting up the script. """
+    """If Config.DEBUG is True, the following settings are used for setting up the script."""
     args = {}
     args["length_conv_round"] = config.CONV_LENGTH
     args["amount_convs"] = config.AMOUNT_CONVS
@@ -22,9 +22,9 @@ def debug_script_setup():
 
 
 if __name__ == "__main__":
-    """ Main-function that initiates the whole script. 
-    If DEBUG_MODE is specified to be True, you can specify the settings here inside the script so that you may 
-    debug the code without the use of the CLI. """
+    """Main-function that initiates the whole script.
+    If DEBUG_MODE is specified to be True, you can specify the settings here inside the script so that you may
+    debug the code without the use of the CLI."""
     start_time = time.time()
 
     if config.VERBOSE:
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         "The setup of test world took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
             end_time_test_world,
             end_time_test_world / 60,
-            end_time_test_world / (60 ** 2),
+            end_time_test_world / (60**2),
             datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         )
         if config.VERBOSE
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         "The generation of conversations took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
             end_time_convs,
             end_time_convs / 60,
-            end_time_convs / (60 ** 2),
+            end_time_convs / (60**2),
             datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         )
         if config.VERBOSE
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         "The tests took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
             end_time_tests,
             end_time_tests / 60,
-            end_time_tests / (60 ** 2),
+            end_time_tests / (60**2),
             datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         )
         if config.VERBOSE
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         "The export took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
             end_time_export,
             end_time_export / 60,
-            end_time_export / (60 ** 2),
+            end_time_export / (60**2),
             datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         )
         if config.VERBOSE
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         "The script took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
             end_time,
             end_time / 60,
-            end_time / (60 ** 2),
+            end_time / (60**2),
             datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         )
         if config.VERBOSE

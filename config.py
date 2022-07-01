@@ -9,6 +9,7 @@ READ_FILE_NAME = ""
 CONV_STARTER = ""
 OVERWRITE_TABLE = False
 LOG_CONVERSATION = True
+OUTPUT_NAME = "test_results_1"
 
 """ Through which channel should the data be exported. Either one of ["sqlite"]. "sqlite" means writing into a 
 sqlite-table during the test run. Currently only support for sqlite. """
