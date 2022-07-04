@@ -1,9 +1,12 @@
-import datetime
-import sqlite3
+from datetime import datetime
+from sqlite3 import Error
 import time
-import src.aux_functions as aux_functions
-import config
-import src.tests as tests
+import src.aux_functions as af
+from pathlib import Path
+import json
+from src import tests
+from config import tests_to_run
+
 
 implemented_tests = {
     "static_tests": {
@@ -19,34 +22,67 @@ implemented_tests = {
 class TestManager:
     """Class for handling all the test cases and containing the results."""
 
-    def __init__(self, list_testees, conversations):
+    def __init__(self, testee_ids, conversations, args):
+        self.args = args
         self.test_results = {}
         self.conversations = conversations
-        self.testees = list_testees
-        self.datetime = datetime.datetime
-        if config.EXPORT_CHANNEL == "sqlite":
+        self.testee_ids = testee_ids
+
+        with open(
+            Path(__file__).parents[1].resolve()
+            / f"test_data/{self.args.experiment_id}/experiment_config.json",
+            "r",
+        ) as f:
+            config = json.load(f)
+            self.config = {int(k): v for k, v in config.items()}
+
+        if args.export_channel == "sqlite":
+            self.db_path = af.create_sqlite(args)
             self.setup_sqlite()
 
     def setup_sqlite(self):
         """Method used for setting up the sqlite-database, which is based upon the table called GDMs."""
-        for testee in self.testees:
+        for run_id, _ in self.conversations.items():
+            conn = af.create_connection(self.db_path)
+            cursor = conn.cursor()
             try:
-                cursor = aux_functions.conn.cursor()
-                cursor.execute(
-                    """
-                    INSERT
-                    INTO GDMs(gdm_id, date_time)
-                    VALUES (?, ?);
-                    """,
-                    [testee.get_id(), self.datetime.now()],
-                )
+                cursor.execute("SELECT run_id FROM runs WHERE run_id = ?", (run_id,))
+                data=cursor.fetchall()
+                if len(data) == 0:
+                    cursor.execute(
+                        """
+                        INSERT
+                        INTO runs(run_id, testee_id, conv_partner_id, conv_length, amount_convs, conv_starter, date_time_generated, date_time_tested)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                        """,
+                        [
+                            run_id,
+                            self.config[run_id]["testee_id"],
+                            self.config[run_id]["conv_partner_id"],
+                            self.config[run_id]["conv_length"],
+                            self.config[run_id]["amount_convs"],
+                            self.config[run_id]["conv_starter"],
+                            self.config[run_id]["date_time"],
+                            datetime.utcnow(),
+                        ],
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        UPDATE runs
+                        SET date_time_tested=?;
+                        """,
+                        [
+                            datetime.utcnow(),
+                        ],
+                    )
 
                 # Successful insert
-                aux_functions.conn.commit()
-            except sqlite3.IntegrityError:
-                print(
-                    "GDM {} already existed in the database. ".format(testee.get_id())
-                )
+                conn.commit()
+            except Error as e:
+                print(e)
+            finally:
+                af.close_connection(conn)
 
     def init_tests(self):
         """Central function for initiating all tests."""
@@ -56,20 +92,20 @@ class TestManager:
     def init_static_tests(self):
         """Method for initiating the static tests, looping over them one by one and running them."""
         for test_case in implemented_tests["static_tests"]:
-            if config.VERBOSE:
-                print("Initiates {}".format(test_case))
+            if self.args.verbose:
+                print("Initiating {}".format(test_case))
                 start_time_tc = time.time()
             test_case = implemented_tests["static_tests"][test_case]()
             test_case.analyse_conversations(self.conversations)
             self.test_results[test_case] = test_case
-            if config.VERBOSE:
+            if self.args.verbose:
                 end_time_tc = time.time() - start_time_tc
                 print(
                     "The test case took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                         end_time_tc,
                         end_time_tc / 60,
                         end_time_tc / (60**2),
-                        self.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     )
                 )
 
@@ -77,51 +113,38 @@ class TestManager:
         """Method for initiating the injected tests, which loops over them one by one and first runs the injection and
         then analyses the result."""
         for test_case in implemented_tests["injected_tests"]:
-            if config.VERBOSE:
-                print("Initiates {}".format(test_case))
-                start_time_tc = time.time()
-            test_case.run(self.conversations)
-            test_case.analyse(self.conversations)
-            if config.VERBOSE:
-                end_time_tc = time.time() - start_time_tc
-                print(
-                    "The script took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
-                        end_time_tc,
-                        end_time_tc / 60,
-                        end_time_tc / (60**2),
-                        self.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            if test_case in tests_to_run:
+                if self.args.verbose:
+                    print("Initiates {}".format(test_case))
+                    start_time_tc = time.time()
+                test_case.run(self.conversations)
+                test_case.analyse(self.conversations, self.db_path)
+                if self.args.verbose:
+                    end_time_tc = time.time() - start_time_tc
+                    print(
+                        "The script took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
+                            end_time_tc,
+                            end_time_tc / 60,
+                            end_time_tc / (60**2),
+                            datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        )
                     )
-                )
 
     def export_results(self):
         """Method for presenting/exporting the results, which per test case calls the method "present()", which per
         case handles how to present/export the results."""
         for test_case in self.test_results:
-            if config.VERBOSE:
+            if self.args.verbose:
                 print("Initiates {}".format(test_case))
                 start_time_tc = time.time()
-            self.export_result(test_case)
-            if config.VERBOSE:
+            test_case.export_json_to_sqlite(self.db_path)
+            if self.args.verbose:
                 end_time_export = time.time() - start_time_tc
                 print(
                     "Finished. The export took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                         end_time_export,
                         end_time_export / 60,
                         end_time_export / (60**2),
-                        self.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     )
                 )
-
-    @staticmethod
-    def export_result(test_case):
-        """Method for presenting the results."""
-        if (
-            config.EXPORT_CHANNEL == "sqlite"
-            and config.INTERNAL_STORAGE_CHANNEL == "json"
-        ):
-            test_case.export_json_to_sqlite()
-        elif (
-            config.EXPORT_CHANNEL == "sqlite"
-            and config.INTERNAL_STORAGE_CHANNEL == "dataframe"
-        ):
-            test_case.export_dataframe_to_sqlite()

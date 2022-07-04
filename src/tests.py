@@ -1,7 +1,4 @@
 import abc
-import datetime
-import sqlite3
-import pandas as pd
 from abc import ABC
 
 from numpy import exp
@@ -11,13 +8,14 @@ from detoxify import Detoxify
 from transformers import BertTokenizer, BertForNextSentencePrediction
 from collections import Counter
 
-import src.aux_functions as aux_functions
-import config
+import src.aux_functions as af
 import src.contractions as contractions
 import src.conversation as conversation
-from conversation import Conversation, Message
+from src.conversation import Conversation, Message
 
 from nltk.tokenize import RegexpTokenizer
+from sqlite3 import Error
+from pathlib import Path
 
 
 class AbstractTestCase(abc.ABC):
@@ -92,37 +90,18 @@ class ToxicContentTest(AbstractConvTest, ABC):
         """Method for applying the test case to all the produced conversations. More specifically, it loops over all
         conversations, applies the analysis to every conversation and then stores the result in a dict which is
         returned."""
-        for i in range(len(conversations)):
-            conv = conversations[i]
-            results = self.analyse(conv)
-
-            if config.INTERNAL_STORAGE_CHANNEL == "json":
+        for run_id, run_conversations in conversations.items():
+            for conv_idx, conv in enumerate(run_conversations):
+                results = self.analyse(conv)
                 try:
-                    self.result_dict[conv.get_testee_id()]["Conversations"][
-                        int(i + 1)
-                    ] = results
+                    self.result_dict[run_id][conv_idx + 1] = results
                 except KeyError:
-                    self.result_dict[conv.get_testee_id()] = {}
-                    self.result_dict[conv.get_testee_id()]["Conversations"] = {}
-                    self.result_dict[conv.get_testee_id()]["Conversations"][
-                        int(i + 1)
-                    ] = results
-            elif config.INTERNAL_STORAGE_CHANNEL == "dataframes":
-                try:
-                    self.result_dict[conv.get_testee_id()] = pd.concat(
-                        [self.result_dict[conv.get_testee_id()], results]
-                    )
-                except:
-                    self.result_dict[conv.get_testee_id()] = results
-
-        return self.result_dict
+                    self.result_dict[run_id] = {}
+                    self.result_dict[run_id][conv_idx + 1] = results
 
     def analyse(self, conv: Conversation):
         """Method for applying the detoxifyer to all of testee's messages, and returns the scores."""
         results = self.detoxify.predict(conv.filter_msgs(role="Testee"))
-
-        if config.INTERNAL_STORAGE_CHANNEL == "dataframes":
-            results = pd.DataFrame(results)
 
         return results
 
@@ -130,52 +109,47 @@ class ToxicContentTest(AbstractConvTest, ABC):
         """Method for returning the id of this test."""
         return self.test_id
 
-    def export_dataframe_to_sqlite(self):
-        """TODO!"""
-        for testee in self.result_dict:
-            result_df = self.result_dict[testee]
-            result_df.to_sql()
-
-    def export_json_to_sqlite(self):
+    def export_json_to_sqlite(self, db_path):
         """The method on how to export/present the data using sqlite.
 
         First, it loops over all the GDMs that have been tested, inserting into MLST that that GDM has been tested,
-        with its corresponding test_id, gdm_id and datetime of the run.
+        with its corresponding run_id, conv_id.
         """
-        for gdm_id in list(self.result_dict.keys()):
-            date_time = datetime.datetime.now()
-            cursor = aux_functions.conn.cursor()
-            test_id = "{}:{}:{}".format(gdm_id, self.test_id, date_time)
-            cursor.execute(
+        conn = af.create_connection(db_path)
+        cursor = conn.cursor()
+        try:
+            to_insert = []
+            for run_id in list(self.result_dict.keys()):
+                cursor.execute(
+                    """
+                    DELETE
+                    FROM TOX_results
+                    WHERE run_id = ?
+                    """,
+                    [run_id],
+                )
+                for conv_nbr in self.result_dict[run_id]:
+                    for toxic_type in self.result_dict[run_id][conv_nbr]:
+                        for msg_idx, toxic_val in enumerate(
+                            self.result_dict[run_id][conv_nbr][toxic_type]
+                        ):
+                            to_insert.append(
+                                (run_id, conv_nbr, msg_idx + 1, toxic_type, toxic_val)
+                            )
+            cursor.executemany(
                 """
                 INSERT
-                INTO test_cases(test_id, gdm_id, date_time_run)
-                VALUES (?, ?, ?);
+                INTO TOX_results(run_id, conv_nbr, msg_nbr, toxicity_type, toxicity_level)
+                VALUES (?, ?, ?, ?, ?);
                 """,
-                [test_id, gdm_id, date_time],
+                to_insert,
             )
             # Successful insert
-            aux_functions.conn.commit()
-
-            """ Secondly, the method loops over all the different conversations. Per conversation, the prediction on
-            seven toxic types have been produced. Thus, it loops over those, and ultimately it loops over all the values
-            per toxicity type, which is the value per message produced. """
-            for conv_nbr in self.result_dict[gdm_id]["Conversations"]:
-                for toxic_type in self.result_dict[gdm_id]["Conversations"][conv_nbr]:
-                    for toxic_val in self.result_dict[gdm_id]["Conversations"][
-                        conv_nbr
-                    ][toxic_type]:
-                        cursor = aux_functions.conn.cursor()
-                        cursor.execute(
-                            """
-                            INSERT
-                            INTO TOX_results(test_id, conv_nbr, toxicity_type, toxicity_level)
-                            VALUES (?, ?, ?, ?);
-                            """,
-                            [test_id, conv_nbr, toxic_type, toxic_val],
-                        )
-                        # Successful insert
-                        aux_functions.conn.commit()
+            conn.commit()
+        except Error as e:
+            print(e)
+        finally:
+            af.close_connection(conn)
 
 
 class VocabularySizeTest(AbstractConvTest, ABC):
@@ -185,7 +159,6 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         self.test_id = "VOCSZ"
         self.vocabulary = {}
         self.excluded_words = []
-        self.excluded_tokens = conversation.set_of_excluded_tokens()
         self.contractions = self.specify_contractions()
         self.frequency_dict_word2rank = self.read_frequency_dict()
         self.frequency_dict_rank2word = self.read_frequency_dict_rank2word()
@@ -201,7 +174,7 @@ class VocabularySizeTest(AbstractConvTest, ABC):
     def read_frequency_dict():
         """Method for setting up the frequency list-dict, which is then used as basis for the whole tests, stating
         which words that have which rankings."""
-        with open("miscellaneous .txt-files/count_1w.txt") as f:
+        with open(Path(__file__).parents[1].resolve() / "data/count_1w.txt") as f:
             lines = f.readlines()
 
         lines = [elem.split("\t", 1) for elem in lines]
@@ -211,14 +184,14 @@ class VocabularySizeTest(AbstractConvTest, ABC):
 
         frequency_dict = {}
         for i in range(len(lines)):
-            frequency_dict[lines[i][0]] = {"rank": i + 1}
+            frequency_dict[lines[i][0]] = i + 1
         return frequency_dict
 
     @staticmethod
     def read_frequency_dict_rank2word():
         """Method for setting up the frequency list-dict with a mapping from a rank to a word, stating which ranks
         correspond with which words."""
-        with open("miscellaneous .txt-files/count_1w.txt") as f:
+        with open(Path(__file__).parents[1].resolve() / "data/count_1w.txt") as f:
             lines = f.readlines()
 
         lines = [elem.split("\t", 1) for elem in lines]
@@ -233,27 +206,23 @@ class VocabularySizeTest(AbstractConvTest, ABC):
     def analyse_conversations(self, conversations: list):
         """Analyses all the conversations. Every conversation is analysed and the results are added to the results
         dict, which is then returned."""
-        for i in range(len(conversations)):
-            conv = conversations[i]
-            results = self.analyse(conv)
-
-            try:
-                self.result_dict[conv.get_testee_id()]["Conversations"][
-                    int(i + 1)
-                ] = results
-            except KeyError:
-                self.result_dict[conv.get_testee_id()] = {}
-                self.result_dict[conv.get_testee_id()]["Conversations"] = {}
-                self.result_dict[conv.get_testee_id()]["Conversations"][
-                    int(i + 1)
-                ] = results
+        for run_id, run_conversations in conversations.items():
+            for conv_idx, conv in enumerate(run_conversations):
+                results = self.analyse(conv)
+                try:
+                    self.result_dict[run_id][conv_idx + 1] = results
+                except KeyError:
+                    self.result_dict[run_id] = {}
+                    self.result_dict[run_id][conv_idx + 1] = results
         return self.result_dict
 
-    def analyse2(self, conv: Conversation):
+    def analyse(self, conv: Conversation):
         "My attempt at a quicker version /Alex"
 
+        results = {}
+
         def is_testee(message: Message):
-            return message.agent_id == "Testee"
+            return message.role == "Testee"
 
         # Creates a generator of messages and joins them into one large string which is then lowered
         testee_messages = filter(lambda x: is_testee(x), conv)
@@ -266,184 +235,70 @@ class VocabularySizeTest(AbstractConvTest, ABC):
         rawtokens = (testee_text[begin:end] for (begin, end) in spans)
 
         def get_words(tokens):
-            "Checks for contradictions"
             for token in tokens:
-                # Token is a contracted word
+                # Checks for contractions, doesnt't work for standard BPE-encoding
+                # i.e. blenderbot_90M
                 if token in self.contractions.keys():
                     words = self.contractions[token].split("/")[0]
                     for word in words.split(" "):
-                        yield word
+                        if word in self.frequency_dict_word2rank:
+                            yield (word, self.frequency_dict_word2rank[word])
+                        else:
+                            yield (word, -1)
                 else:
-                    yield token
+                    if token in self.frequency_dict_word2rank:
+                        yield (token, self.frequency_dict_word2rank[token])
+                    else:
+                        yield (token, -1)
 
         word_gen = get_words(rawtokens)
-        counter = Counter(word_gen)
+        word_counter = Counter(word_gen)
 
-        # Split the words into different ranks or whatever
-        return counter
-
-    def analyse(self, conv: Conversation):
-        """Function for storing words used by the GDM to keep track of its vocabulary.
-        Loops over all messages and per message, it splits it in order to isolate the words used. Then it removed
-        tokens such as ',', '.', '?', '!'. After these processes, it is added to the dict, either adds 1 to the amount
-        of usages for that word, or sets it to one if it is a new word."""
-        testee_id = conv.get_testee_id()
-
-        self.vocabulary[testee_id] = {
-            "word_counter": Counter(),
-            "frequency_word_list": {},
-            "non_frequent_words": Counter(),
-        }
-
-        """ Loops over the messages in the conversation. Per message, it is first checked for whether it belongs to the
-        testee or not. It continues only if it belongs to the testee."""
-        for message in conv:
-            if message.get_role() != "Testee":
-                continue
-            word_array = str(message).split()
-            word_array = self.preprocess_word_array(word_array)
-
-            """ The one or several words that word_array may contain is counted and then added to the existing counter. 
-            """
-            counter = Counter(word_array)
-            self.vocabulary[testee_id]["word_counter"] += counter
-
-            """ Calling the method that adds any word to the frequency list. """
-            self.add_to_freq_list(word_array, testee_id)
-        return self.vocabulary[testee_id].copy()
-
-    def preprocess_word_array(self, word_array):
-        """Method for preprocessing word_array so that it is ready to be inserted into a Counter for counting the
-        frequency per word. Removes tokens defined in the constructor from strings, and if the word is defined in the
-        constructor as an "excluded" word, it is not counted. If it is an contraction, it is prolonged to the full
-        meaning of the contraction. It is done by copying the array, then adding the correct words to the copy and
-        replacing the faulty words with self.token_indicating_removal, whose spots are removed in the end of this
-        function."""
-        fixed_word_array = word_array.copy()
-        for i in range(len(word_array)):
-            word = word_array[i]
-            word = word.lower()
-            word = conversation.clean_from_excluded_tokens(word)
-            if word in self.excluded_words or word in self.excluded_tokens:
-                fixed_word_array[i] = self.token_indicating_removal
-                continue
-
-            """ If the word is a contraction, its full meaning is found and inserted word-wise into the list called 
-            word. If no contraction, the word is just inserted into the list. """
-            if word in self.contractions:
-                word = self.find_contraction(word)
-                for word_part in word:
-                    fixed_word_array.append(word_part)
-                fixed_word_array[i] = self.token_indicating_removal
-                continue
-            fixed_word_array[i] = word
-
-        while "%%" in fixed_word_array:
-            fixed_word_array.remove(self.token_indicating_removal)
-        return fixed_word_array
-
-    def add_to_freq_list(self, word_list, testee_id):
-        """Per word that may occur in word_list, the frequency list is also updated. That is the mapping from a
-        rank to a frequency. If it does not exist in the frequency list, it is added to the non-frequent
-        words-list, which means that the word did not exist in the current frequency list, meaning that it is
-        irregular."""
-        for word in word_list:
-            try:
-                """Fetching the rank may cause KeyError if the specific word is non-existent in the frequency list."""
-                rank = self.frequency_dict_word2rank[word]["rank"]
-                self.vocabulary[testee_id]["frequency_word_list"][
-                    rank
-                ] = self.vocabulary[testee_id]["word_counter"][word]
-            except KeyError:
-                """Adds the counter to the existing counter in the non-frequent word list"""
-                word_counter = Counter([word])
-                self.vocabulary[testee_id]["non_frequent_words"] += word_counter
+        return word_counter
 
     def get_id(self):
         """Returns the ID of this test."""
         return self.test_id
 
-    def find_contraction(self, word):
-        """Whenever a word is a contraction, this method finds its full meaning, which may be one or several
-        expressions."""
-        sentence_array = self.contractions[word].split("/")
-        word_array = []
-        if len(sentence_array) > 1:
-            for elem in sentence_array:
-                word_array += elem.split()
-        elif len(sentence_array) == 1:
-            word_array = sentence_array[0].split()
-        return word_array
-
-    def export_json_to_sqlite(self):
+    def export_json_to_sqlite(self, db_path):
         """Method for specifying how to export/present the results. Loops over the GDMs and per GDM transfers the
         test results into the sqlite-file."""
-        for gdm_id in list(self.result_dict.keys()):
-            date_time = datetime.datetime.now()
-            cursor = aux_functions.conn.cursor()
-            test_id = "{}:{}:{}".format(gdm_id, self.test_id, date_time)
-            cursor.execute(
+        conn = af.create_connection(db_path)
+        cursor = conn.cursor()
+        try:
+            to_insert = []
+            for run_id in self.result_dict.keys():
+                cursor.execute(
+                    """
+                    DELETE
+                    FROM VOCSZ_results
+                    WHERE run_id = ?
+                    """,
+                    [run_id],
+                )
+                # Per conversation, it loops over the words that were counted in that conversation. Per word, the word
+                # and its frequency in that conversation is transferred to the sqlite-database.
+                for conv_nbr in self.result_dict[run_id]:
+                    for word, word_rank in self.result_dict[run_id][conv_nbr]:
+                        frequency = self.result_dict[run_id][conv_nbr][
+                            (word, word_rank)
+                        ]
+                        word = self.frequency_dict_rank2word[word_rank - 1]
+                        to_insert.append((run_id, conv_nbr, word, word_rank, frequency))
+            cursor.executemany(
                 """
                 INSERT
-                INTO test_cases(test_id, gdm_id, date_time_run)
-                VALUES (?, ?, ?);
+                INTO VOCSZ_results(run_id, conv_nbr, word, word_rank, frequency)
+                VALUES (?, ?, ?, ?, ?);
                 """,
-                [test_id, gdm_id, date_time],
+                to_insert,
             )
             # Successful insert
-            aux_functions.conn.commit()
-
-            """ Per conversation, it loops over the words that were counted in that conversation. Per word, the word
-            and its frequency in that conversation is transferred to the sqlite-database. """
-            for conv_nbr in self.result_dict[gdm_id]["Conversations"]:
-                """Per word rank that was logged from the test results, one unit is added times the frequency. This is
-                in order to fit the Grafana-way of producing histograms."""
-                for word_rank in self.result_dict[gdm_id]["Conversations"][conv_nbr][
-                    "frequency_word_list"
-                ]:
-                    for i in range(
-                        self.result_dict[gdm_id]["Conversations"][conv_nbr][
-                            "frequency_word_list"
-                        ][word_rank]
-                    ):
-                        cursor = aux_functions.conn.cursor()
-
-                        """ Reads the word combined with the word_rank, with the purpose of clarification in the db, if
-                        the user would like to double-check any word's frequency or whatever the reason. """
-                        word = self.frequency_dict_rank2word[word_rank - 1]
-                        cursor.execute(
-                            """
-                            INSERT
-                            INTO VOCSZ_frequency_list(test_id, conv_nbr, word, word_rank, frequency)
-                            VALUES (?, ?, ?, ?, ?);
-                            """,
-                            [test_id, conv_nbr, word, word_rank, 1],
-                        )
-                        # Successful insert
-                        aux_functions.conn.commit()
-
-                """ Also, the non-frequent words are transferred to make this data available as well. """
-                for non_freq_word in self.result_dict[gdm_id]["Conversations"][
-                    conv_nbr
-                ]["non_frequent_words"]:
-                    cursor = aux_functions.conn.cursor()
-                    cursor.execute(
-                        """
-                        INSERT
-                        INTO VOCSZ_non_frequent_list(test_id, conv_nbr, word, frequency)
-                        VALUES (?, ?, ?, ?);
-                        """,
-                        [
-                            test_id,
-                            conv_nbr,
-                            non_freq_word,
-                            self.result_dict[gdm_id]["Conversations"][conv_nbr][
-                                "non_frequent_words"
-                            ][non_freq_word],
-                        ],
-                    )
-                    # Successful insert
-                    aux_functions.conn.commit()
+            conn.commit()
+        except Error as e:
+            print(e)
+        finally:
+            af.close_connection(conn)
 
 
 class CoherentResponseTest(AbstractConvTest, ABC):
@@ -462,55 +317,44 @@ class CoherentResponseTest(AbstractConvTest, ABC):
     def analyse_conversations(self, conversations: list):
         """Loops over all conversations, it analyses each conversation, and then it adds the results to the results
         dict."""
-        for i in range(len(conversations)):
-            conv = conversations[i]
-            results = self.analyse(conv)
-
-            try:
-                self.result_dict[conv.get_testee_id()]["Conversations"][
-                    int(i + 1)
-                ] = results
-            except KeyError:
-                self.result_dict[conv.get_testee_id()] = {}
-                self.result_dict[conv.get_testee_id()]["Conversations"] = {}
-                self.result_dict[conv.get_testee_id()]["Conversations"][
-                    int(i + 1)
-                ] = results
+        for run_id, run_conversations in conversations.items():
+            for conv_idx, conv in enumerate(run_conversations):
+                results = self.analyse(conv)
+                try:
+                    self.result_dict[run_id][conv_idx + 1] = results
+                except KeyError:
+                    self.result_dict[run_id] = {}
+                    self.result_dict[run_id][conv_idx + 1] = results
         return self.result_dict
 
     def analyse(self, conv: Conversation):
         """Per conversation, the test case is performed. It produces a list of dicts, where every dict contains the two
         compared messages, along with its NSP-prediction."""
-        results = list()
-        messages_testee = conv.filter_msgs("Testee")
-        messages_other_agent = conv.filter_gdm_preceding_msgs()
-        ns_predictions = self.batch_nsp(
+        results = []
+        messages_testee = [
+            (str(conv.messages[i]), i)
+            for i in range(1, len(conv.messages))
+            if conv.messages[i].role == "Testee"
+        ]  # conv.filter_msgs("Testee")
+        messages_other_agent = [str(conv.messages[i - 1]) for _, i in messages_testee]
+        messages_testee = [m[0] for m in messages_testee]
+        ns_preds = self.batch_nsp(
             first_sentences=messages_other_agent, second_sentences=messages_testee
         )
-        for i in range(1, len(conv) - 1):
-            message = conv[i]
-            if message.get_role() == "Testee":
-                result = {}
-                prev_message = str(conv[i - 1])
-                testee_message = str(message)
-
-                """ Pops out the index 0-element since that belongs to the currently analyzed pair of messages. Then, we 
-                extract element 0 from that list, since we only need the positive prediction. """
-                next_sent_prediction = ns_predictions.pop(0)[0]
-                result["Previous message"] = str(prev_message)
-                result["Testee message"] = str(testee_message)
-                result["NSP-prediction"] = next_sent_prediction
-                results.append(result)
+        for testee_m, prev_m, pred in zip(
+            messages_testee, messages_other_agent, ns_preds
+        ):
+            result = {}
+            # Pops out the index 0-element since that belongs to the currently analyzed pair of messages. Then, we
+            # extract element 0 from that list, since we only need the positive prediction.
+            result["Previous message"] = prev_m
+            result["Testee message"] = testee_m
+            result["NSP-prediction"] = pred[0]
+            results.append(result)
         return results
 
     def get_id(self):
         return self.test_id
-
-    def next_sent_prediction(self, string1, string2):
-        """Method for predicting whether string2 coherently follows string1 or not, using NSP-BERT."""
-        inputs = self.bert_tokenizer(string1, string2, return_tensors="pt")
-        outputs = self.bert_model(**inputs)
-        return self.softmax(outputs.logits.tolist()[0])
 
     def batch_nsp(self, first_sentences: list, second_sentences: list):
         """Method for assessing NSP between two lists of sentences, with the purpose of improving the performance of
@@ -531,41 +375,50 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         e = exp(vector)
         return e / e.sum()
 
-    def export_json_to_sqlite(self):
+    def export_json_to_sqlite(self, db_path):
         """Method for exporting/presenting the results of this test into the sqlite-database. Per GDM, it inserts info
         about which test that was performed on which GDM and at what datetime."""
-        for gdm_id in list(self.result_dict.keys()):
-            date_time = datetime.datetime.now()
-            cursor = aux_functions.conn.cursor()
-            test_id = "{}:{}:{}".format(gdm_id, self.test_id, date_time)
-            cursor.execute(
+        conn = af.create_connection(db_path)
+        cursor = conn.cursor()
+        try:
+            to_insert = []
+            for run_id in self.result_dict.keys():
+                cursor.execute(
+                    """
+                    DELETE
+                    FROM COHER_results
+                    WHERE run_id = ?
+                    """,
+                    [run_id],
+                )
+                # Per conversation, it loops over the words that were counted in that conversation. Per word, the word
+                # and its frequency in that conversation is transferred to the sqlite-database.
+                for conv_nbr in self.result_dict[run_id]:
+                    for msg_idx, result in enumerate(
+                        self.result_dict[run_id][conv_nbr]
+                    ):
+                        to_insert.append(
+                            (
+                                run_id,
+                                conv_nbr,
+                                msg_idx + 1,
+                                1 - result["NSP-prediction"],
+                            )
+                        )
+            cursor.executemany(
                 """
                 INSERT
-                INTO test_cases(test_id, gdm_id, date_time_run)
-                VALUES (?, ?, ?);
+                INTO COHER_results(run_id, conv_nbr, msg_nbr, neg_pred)
+                VALUES (?, ?, ?, ?);
                 """,
-                [test_id, gdm_id, date_time],
+                to_insert,
             )
             # Successful insert
-            aux_functions.conn.commit()
-
-            """ Per conversation and per test result, the previous and the tested message is inserted into the database,
-            along with the positive and negative predictions."""
-            for conv_nbr in self.result_dict[gdm_id]["Conversations"]:
-                for tested_response_dict in self.result_dict[gdm_id]["Conversations"][
-                    conv_nbr
-                ]:
-                    cursor = aux_functions.conn.cursor()
-                    cursor.execute(
-                        """
-                        INSERT
-                        INTO COHER_results(test_id, conv_nbr, neg_pred)
-                        VALUES (?, ?, ?);
-                        """,
-                        [test_id, conv_nbr, 1 - tested_response_dict["NSP-prediction"]],
-                    )
-                    # Successful insert
-                    aux_functions.conn.commit()
+            conn.commit()
+        except Error as e:
+            print(e)
+        finally:
+            af.close_connection(conn)
 
 
 class ReadabilityIndexTest(AbstractConvTest, ABC):
@@ -573,88 +426,84 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
 
     def __init__(self):
         self.test_id = "READIND"
-        self.excluded_tokens = conversation.set_of_excluded_tokens()
         self.result_dict = {}
 
     def analyse_conversations(self, conversations: list):
         """Applies this test on all the conversations and then adds the results to the result dict."""
-        for i in range(len(conversations)):
-            conv = conversations[i]
-            results = self.analyse(conv)
-
-            try:
-                self.result_dict[conv.get_testee_id()]["Conversations"][
-                    int(i + 1)
-                ] = results
-            except KeyError:
-                self.result_dict[conv.get_testee_id()] = {}
-                self.result_dict[conv.get_testee_id()]["Conversations"] = {}
-                self.result_dict[conv.get_testee_id()]["Conversations"][
-                    int(i + 1)
-                ] = results
+        for run_id, run_conversations in conversations.items():
+            for conv_idx, conv in enumerate(run_conversations):
+                results = self.analyse(conv)
+                try:
+                    self.result_dict[run_id][conv_idx + 1] = results
+                except KeyError:
+                    self.result_dict[run_id] = {}
+                    self.result_dict[run_id][conv_idx + 1] = results
         return self.result_dict
 
     def analyse(self, conv: Conversation):
         """Per conversation, the test is applied and the results are stored."""
-        results = {"amount_sentences": 0, "amount_words": 0, "amount_words_grt_6": 0}
+        nbr_sentences = 0
+        nbr_words = 0
+        nbr_words_grt_6 = 0
+        tokenizer = RegexpTokenizer(r"[\w']+")
 
-        """ Loops over all messages, and per message it stores the amount of sentences, the amount of words and the 
-        amount of words greater than six. Then, the readability index is calculated according to a formula."""
+        # Loops over all messages, and per message it stores the amount of sentences, the amount of words and the
+        # amount of words greater than six. Then, the readability index is calculated according to the formula.
         for message in conv:
-            if message.get_role() == "testee":
-                results[
-                    "amount_sentences"
-                ] += conversation.count_sentences_within_string(str(message))
-                for word in str(message).split():
-                    word = conversation.clean_from_excluded_tokens(word)
-
-                    """ word needs to be no excluded token and longer than 0. That is since if the GDM has produced this
-                    sentence as an example: "Hello , how are you today ?", then .clean_from_excluded_tokens would return 
-                    "" given "," or "?" as input, which should be disregarded. """
-                    if word not in self.excluded_tokens and len(word) > 0:
-                        results["amount_words"] += 1
+            if message.role == "Testee":
+                nbr_sentences += conversation.count_sentences_within_string(
+                    str(message)
+                )
+                spans = tokenizer.span_tokenize(str(message))
+                rawtokens = (str(message)[begin:end] for (begin, end) in spans)
+                for word in rawtokens:
+                    if len(word) > 0:
+                        nbr_words += 1
                     if len(word) > 6:
-                        results["amount_words_grt_6"] += 1
-        results["readability_index"] = (
-            results["amount_words"] / results["amount_sentences"]
-            + results["amount_words_grt_6"] / results["amount_words"] * 100
+                        nbr_words_grt_6 += 1
+        readability_index = (
+            nbr_words / nbr_sentences + nbr_words_grt_6 / nbr_words * 100
         )
-        return results
+        return readability_index
 
     def get_id(self):
         return self.test_id
 
-    def export_json_to_sqlite(self):
+    def export_json_to_sqlite(self, db_path):
         """Method for transferring the test results into the database. More specifically, it loops over all GDMs, then
         checks per conversation what the different metrics were, and then inserts those into the database."""
-        for gdm_id in list(self.result_dict.keys()):
-            date_time = datetime.datetime.now()
-            cursor = aux_functions.conn.cursor()
-            test_id = "{}:{}:{}".format(gdm_id, self.test_id, date_time)
-            cursor.execute(
-                """
-                INSERT
-                INTO test_cases(test_id, gdm_id, date_time_run)
-                VALUES (?, ?, ?);
-                """,
-                [test_id, gdm_id, date_time],
-            )
-            # Successful insert
-            aux_functions.conn.commit()
-
-            for conv_nbr in self.result_dict[gdm_id]["Conversations"]:
-                cursor = aux_functions.conn.cursor()
-                conv = self.result_dict[gdm_id]["Conversations"][conv_nbr]
+        conn = af.create_connection(db_path)
+        cursor = conn.cursor()
+        try:
+            to_insert = []
+            for run_id in self.result_dict.keys():
                 cursor.execute(
                     """
-                    INSERT
-                    INTO READIND_results(test_id, conv_nbr, readab_index)
-                    VALUES (?, ?, ?);
+                    DELETE
+                    FROM READIND_results
+                    WHERE run_id = ?
                     """,
-                    [test_id, conv_nbr, conv["readability_index"]],
+                    [run_id],
                 )
-                # Successful insert
-                aux_functions.conn.commit()
+                # Per conversation, it loops over the words that were counted in that conversation. Per word, the word
+                # and its frequency in that conversation is transferred to the sqlite-database.
+                for conv_nbr in self.result_dict[run_id]:
+                    readability_index = self.result_dict[run_id][conv_nbr]
+                    to_insert.append((run_id, conv_nbr, readability_index))
+            cursor.executemany(
+                """
+                INSERT
+                INTO READIND_results(run_id, conv_nbr, readab_index)
+                VALUES (?, ?, ?);
+                """,
+                to_insert,
+            )
+            # Successful insert
+            conn.commit()
+        except Error as e:
+            print(e)
+        finally:
+            af.close_connection(conn)
 
 
 # ----------------------- Injected tests
