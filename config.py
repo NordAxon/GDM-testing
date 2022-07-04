@@ -1,20 +1,25 @@
-DEBUG_MODE = False
+# General settings
+EXPERIMENT_ID = "EXPERIMENT_ID"
 VERBOSE = True
-RANDOM_CONV_START = True
-CONV_LENGTH = 2
-AMOUNT_CONVS = 1
-CONV_PARTNER = 'blenderbot90m'
-TESTEE = 'emely02'
-READ_FILE_NAME = ""
-CONV_STARTER = ""
-OVERWRITE_TABLE = True
-LOG_CONVERSATION = False
-
-""" Through which channel should the data be exported. Either one of ["sqlite"]. "sqlite" means writing into a 
-sqlite-table during the test run. Currently only support for sqlite. """
 EXPORT_CHANNEL = "sqlite"
+OVERWRITE_TABLE = False
 
-""" How the data should be internally stored. Either one of ["json", "dataframes"]. json implicates that all data is 
-stored in a json-format and then exported. dataframes means that the data is stored in dataframes, which then uses the
-proprietary methods of pandas to export the data into the chosen EXPORT_CHANNEL. """
-INTERNAL_STORAGE_CHANNEL = "json"
+# Choose tests to run (can be found in src.test_manager.implemented_tests)
+tests_to_run = [
+    "TOX",
+    "VOCSZ",
+    "COHER",
+    "READIND",
+]
+
+# For generating new conversations
+CONV_LENGTH = 2
+CONV_STARTER = ""
+RANDOM_CONV_START = True
+AMOUNT_CONVS = 2
+CONV_PARTNER_ID = "blenderbot90m"
+TESTEE_IDS = "your_local_model_images"
+INTERVIEW_MODE = True
+
+# For reading from files
+READ_RUN_IDS = ""
