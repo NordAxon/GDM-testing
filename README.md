@@ -66,7 +66,7 @@ optional arguments:
                             Currently only miscellaneous .txt-files are supported.
 ```
 
-### Visualise the results from the SQLite-file
+### Visualise the results from the SQLite-file (Deprecated)
 
 1. Install and set up a Grafana-server. More information about that can be found here: https://grafana.com/docs/grafana/latest/setup-grafana/installation/.
 2. Log in with username: admin, password: admin on localhost:3000 and choose a new password.
