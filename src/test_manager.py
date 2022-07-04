@@ -47,7 +47,7 @@ class TestManager:
             cursor = conn.cursor()
             try:
                 cursor.execute("SELECT run_id FROM runs WHERE run_id = ?", (run_id,))
-                data=cursor.fetchall()
+                data = cursor.fetchall()
                 if len(data) == 0:
                     cursor.execute(
                         """
@@ -62,7 +62,7 @@ class TestManager:
                             self.config[run_id]["conv_length"],
                             self.config[run_id]["amount_convs"],
                             self.config[run_id]["conv_starter"],
-                            self.config[run_id]["date_time"],
+                            self.config[run_id]["date_time_generated"],
                             datetime.utcnow(),
                         ],
                     )
@@ -72,9 +72,7 @@ class TestManager:
                         UPDATE runs
                         SET date_time_tested=?;
                         """,
-                        [
-                            datetime.utcnow(),
-                        ],
+                        [datetime.utcnow(),],
                     )
 
                 # Successful insert
@@ -104,7 +102,7 @@ class TestManager:
                     "The test case took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                         end_time_tc,
                         end_time_tc / 60,
-                        end_time_tc / (60**2),
+                        end_time_tc / (60 ** 2),
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     )
                 )
@@ -125,7 +123,7 @@ class TestManager:
                         "The script took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                             end_time_tc,
                             end_time_tc / 60,
-                            end_time_tc / (60**2),
+                            end_time_tc / (60 ** 2),
                             datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                         )
                     )
@@ -144,7 +142,7 @@ class TestManager:
                     "Finished. The export took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                         end_time_export,
                         end_time_export / 60,
-                        end_time_export / (60**2),
+                        end_time_export / (60 ** 2),
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     )
                 )
