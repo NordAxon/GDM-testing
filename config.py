@@ -1,5 +1,5 @@
 # General settings
-EXPERIMENT_ID = "testing"
+EXPERIMENT_ID = "EXPERIMENT_ID"
 VERBOSE = True
 EXPORT_CHANNEL = "sqlite"
 OVERWRITE_TABLE = False
