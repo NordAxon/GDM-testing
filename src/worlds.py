@@ -1,29 +1,36 @@
-import datetime
+from datetime import datetime
 import os
 import config
 import src.conv_agents as conv_agents
-from conversation import Conversation, InterviewConversation
-from test_manager import TestManager
+from src.conversation import Conversation, InterviewConversation
+from src.test_manager import TestManager
 from pathlib import Path
-
-# Folder to store conversation logs
-log_path = Path(__file__).parent / "conversation_logs"
-log_path.mkdir(exist_ok=True)
+import json
 
 
-def write_to_txt(testee_gdm_id, text):
-    file = log_path / f"{testee_gdm_id}.txt"
-    with open(file, "a") as f:
+def write_to_txt(text, run_id, experiment_path):
+    log_path = experiment_path / f"run_{run_id}.txt"
+    with open(log_path, "a") as f:
         f.write(text)
 
 
-def setup_txt(testee, conv_partner):
-    write_to_txt(
-        testee_gdm_id=testee.get_id(),
-        text="testee:{}\nother agent:{}\n####\n".format(
-            testee.get_id(), conv_partner.get_id()
-        ),
-    )
+def log_config(args, run_id, testee, log_config_path):
+    try:
+        with open(log_config_path, "r") as f:
+            config = json.load(f)
+    except:
+        config = {}
+    config[run_id] = {
+        "testee_id": testee,
+        "conv_partner_id": args.conv_partner_id,
+        "random_conv_start": args.random_conv_start,
+        "conv_length": args.conv_length,
+        "amount_convs": args.amount_convs,
+        "conv_starter": args.conv_starter,
+        "date_time": str(datetime.utcnow()),
+    }
+    with open(log_config_path, "w") as f:
+        json.dump(config, f, indent=4)
 
 
 class TestWorld:
@@ -32,75 +39,62 @@ class TestWorld:
     """
 
     def __init__(self, args):
-        if not config.DEBUG_MODE:
-            self.args = vars(args)
-            config.VERBOSE = self.args.get("verbose")
-            config.INTERNAL_STORAGE_CHANNEL = self.args.get("internal_storage")
-            config.EXPORT_CHANNEL = self.args.get("export_channel")
-            config.READ_FILE_NAME = self.args.get("read_file_name")
-            config.OVERWRITE_TABLE = self.args.get("overwrite_table")
-        else:
-            self.args = args
+        self.args = args
 
-        """ Settings that should only be set up as long as the conversations should be generated and not read. """
-        if config.READ_FILE_NAME == "":
-            self.conv_length = self.args.get("length_conv_round", config.CONV_LENGTH)
-            self.amount_convs = self.args.get("amount_convs", config.AMOUNT_CONVS)
-            self.conv_starter = self.args.get("conv_starter")
+        # Kill all running containers
+        os.system("docker kill $(docker ps -q)")
 
-            # Kill all running containers
-            os.system("docker kill $(docker ps -q)")
-
-            """ Loads and instantiates the GDMs. """
-            self.conv_partner = conv_agents.load_conv_agent(
-                self.args.get("conv_partner")
-            )[0]
-            self.testees = conv_agents.load_conv_agent(
-                self.args.get("tested_gdms"), role="Testee"
+        """ Loads and instantiates the GDMs. """
+        if args.read_run_ids == "":
+            conv_partners, _ = conv_agents.load_conv_agent(args.conv_partner_id)
+            self.conv_partner = conv_partners[0]
+            self.testees, self.testee_ids = conv_agents.load_conv_agent(
+                args.testee_ids, role="Testee"
             )
         else:
-            config.RANDOM_CONV_START = False
-            config.LOG_CONVERSATION = False
+            self.conv_partner, self.testees, self.testee_ids = None, [], []
+
+        self.experiment_path = (
+            Path(__file__).parents[1] / f"test_data/{self.args.experiment_id}"
+        )
+        try:
+            os.mkdir(self.experiment_path)
+        except:
+            pass
+        self.run_id = 1
+        if (self.experiment_path / f"run_{self.run_id}.txt").exists():
+            self.run_id = (
+                max(
+                    [
+                        int(f.split("_")[1].split(".")[0])
+                        for f in os.listdir(self.experiment_path)
+                        if f[-4:] != "json"
+                    ]
+                )
+                + 1
+            )
+        self.log_config_path = self.experiment_path / "experiment_config.json"
 
         self.test_manager = None
-        self.conversations = []
-        self.datetime_of_run = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        self.conversations = {}
+        self.datetime_of_run = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
     @staticmethod
     def add_to_argparse(parser):
         """argparse for parsing the input from the CLI."""
         parser.add_argument(
-            "-l",
-            "--length-conv-round",
-            metavar="",
-            type=int,
-            default=config.CONV_LENGTH,
-            help="How many rounds shall there be per " "conversation until restart",
-        )
-        parser.add_argument(
-            "-a",
-            "--amount-convs",
-            metavar="",
-            type=int,
-            default=config.AMOUNT_CONVS,
-            help="How many conversations shall there be per tested GDM",
-        )
-        parser.add_argument(
-            "-t",
-            "--tested-gdms",
-            metavar="",
+            "-eid",
+            "--experiment_id",
+            default=config.EXPERIMENT_ID,
             type=str,
-            default=config.TESTEE,
-            help="Write one or several GDMs you want to test. "
-            "If several, have them separated by ','. ",
+            help="We divide all runs into experiments with a unique identifier.",
         )
         parser.add_argument(
-            "-cp",
-            "--conv-partner",
-            metavar="",
-            type=str,
-            default=config.CONV_PARTNER,
-            help="Specify which GDM to test your GDM against",
+            "-v",
+            "--verbose",
+            action="store_true",
+            default=config.VERBOSE,
+            help="Use verbose printing.",
         )
         parser.add_argument(
             "-ec",
@@ -108,27 +102,22 @@ class TestWorld:
             metavar="",
             type=str,
             default=config.EXPORT_CHANNEL,
-            help="Specify which channel to export the results through. Currently only 'sqlite' "
-            "is implemented"
-            "",
+            help="Specify which channel to export the results through. Currently only 'sqlite' is available.",
         )
         parser.add_argument(
-            "-is",
-            "--internal-storage",
-            metavar="",
-            type=str,
-            default=config.INTERNAL_STORAGE_CHANNEL,
-            help="Specify which channel to use for the internal storage of results. Currently only "
-            "'json' is implemented. "
-            "",
-        )
-        parser.add_argument(
-            "-v",
-            "--verbose",
+            "-od",
+            "--overwrite-db",
             action="store_true",
-            default=True,
-            help="True: The script prints out what happens so that the user may follow the process. "
-            "False: A silent run of the script where nothing is printed. Defaults to True.",
+            default=False,
+            help="Specifies if the result database should be overwritten during computation.",
+        )
+        parser.add_argument(
+            "-cl",
+            "--conv-length",
+            metavar="",
+            type=int,
+            default=config.CONV_LENGTH,
+            help="How many replies from each GDM all conversations should contain.",
         )
         parser.add_argument(
             "-cs",
@@ -137,113 +126,137 @@ class TestWorld:
             type=str,
             default="",
             help="Testee: testee initiates every conversation. Conv-partner: the conversation partner "
-            "initiates all conversations. Not specified: 50-50 per conversation who starts that "
-            "conversation.",
+            "initiates all conversations. Not specified: 50-50.",
         )
         parser.add_argument(
-            "-rf",
-            "--read-file-name",
+            "-rcs",
+            "--random-conv-start",
+            default=True,
+            type=bool,
+            help="Start conversations with a random reply.",
+        )
+        parser.add_argument(
+            "-a",
+            "--amount-convs",
+            metavar="",
+            type=int,
+            default=config.AMOUNT_CONVS,
+            help="How many conversations shall there be per tested GDM.",
+        )
+        parser.add_argument(
+            "-cp",
+            "--conv-partner_id",
             metavar="",
             type=str,
-            default=config.READ_FILE_NAME,
-            help="The path to the file you want to read into the script. Interprets the letters behind "
-            "the '.' as the file type. No input is interpreted as such the script generates "
-            "conversations using the GDMs. Currently only miscellaneous .txt-files are supported.",
+            default=config.CONV_PARTNER_ID,
+            help="Specify which GDM to run your testees against.",
         )
         parser.add_argument(
-            "-ot",
-            "--overwrite-table",
-            action="store_true",
-            default=False,
-            help="Should the current "
-            "table be overwritten or should the results be inserted into the currently existing "
-            "one. True for creating a new table, False for inserting into the currently existing "
-            "database-file. Defaults to True. ",
+            "-t",
+            "--testee-ids",
+            metavar="",
+            default=config.TESTEE_IDS,
+            type=str,
+            help="""Names of local docker images to use for each run, separated by ",".""",
         )
         parser.add_argument(
+            "-im",
             "--interview-mode",
             action="store_true",
             default=False,
-            help="Conversations are initialized as interview scenarios",
+            help="Conversations are initialized as interview scenarios.",
+        )
+        parser.add_argument(
+            "-rid",
+            "--read-run-ids",
+            metavar="",
+            type=str,
+            default=config.READ_RUN_IDS,
+            help="Run ids of the runs to import. No input is interpreted as such the script generates "
+            "conversations using the GDMs. Currently only miscellaneous .txt-files are supported.",
         )
 
     def init_conversations(self):
         """Initiates the conversation. Aims to have a consistent conversation partner conv_partner, with whom each of
         the specified GDMs in the list testees will have conversations. Each of the testees will have amount_convs
         conversations that will then be evaluated and pose the grounds for evaluation and examination."""
-        if config.READ_FILE_NAME != "":
-            file_path = config.READ_FILE_NAME
-            file_type = file_path.split(".")[1]
-            self.read_file(file_path=file_path, file_type=file_type)
+        if self.args.read_run_ids != "":
+            run_ids = [int(run_id) for run_id in self.args.read_run_ids.split(",")]
+            self.read_files(run_ids)
             return
 
         for i in range(len(self.testees)):
+            testee_conversations = []
             testee = self.testees[i]
             testee.setup()
-            if config.LOG_CONVERSATION:
-                setup_txt(testee=testee, conv_partner=self.conv_partner)
-            for j in range(self.amount_convs):
-                if config.VERBOSE:
-                    print("Initiates conversation {}".format(j + 1))
-                if self.args["interview_mode"]:
+            log_config(self.args, self.run_id, self.testee_ids[i], self.log_config_path)
+            for j in range(self.args.amount_convs):
+                if self.args.verbose:
+                    print("Initiating conversation {}".format(j + 1))
+                if self.args.interview_mode:
                     conv = InterviewConversation(
-                        testee=testee, conv_partner=self.conv_partner
+                        testee,
+                        self.conv_partner,
+                        self.run_id,
+                        self.experiment_path,
+                        self.args,
                     )
                 else:
                     conv = Conversation(
-                        testee=testee,
-                        conv_partner=self.conv_partner,
-                        conv_starter=self.conv_starter,
+                        testee,
+                        self.conv_partner,
+                        self.run_id,
+                        self.experiment_path,
+                        self.args,
                     )
-                conv = conv.initiate_conversation(self.conv_length)
-                self.conversations.append(conv)
-                if config.VERBOSE:
-                    print("Ends conversation {}".format(j + 1))
+                conv = conv.initiate_conversation(
+                    self.args.conv_length, self.run_id, self.experiment_path
+                )
+                testee_conversations.append(conv)
+                if self.args.verbose:
+                    print("Ended conversation {}".format(j + 1))
             testee.shutdown()
+            self.conversations[self.run_id] = testee_conversations
+            self.run_id += 1
 
     def init_tests(self):
         """Initiates the evaluation of the conversations produced."""
-        self.test_manager = TestManager(
-            list_testees=self.testees, conversations=self.conversations
-        )
+        self.test_manager = TestManager(self.testee_ids, self.conversations, self.args)
         self.test_manager.init_tests()
 
-    def read_file(self, file_path: str, file_type: str) -> list:
-        """Work in progress to make it possible to read files, as to be able to assess conversations from outside the
-        script."""
-        if file_type == "txt":
-            with open(file_path) as f:
+    def read_files(self, run_ids) -> list:
+        """Read files generated in the current experiment with specified ids."""
+        with open(self.experiment_path / "experiment_config.json", "r") as f:
+            config = json.load(f)
+        config = {int(k): v for k, v in config.items()}
+        for run_id in run_ids:
+            run_convs = []
+            with open(self.experiment_path / f"run_{run_id}.txt") as f:
                 lines = f.readlines()
 
-                testee_str = lines[0].split(":")[1].replace("\n", "")
-                conv_partner_str = lines[1].split(":")[1].replace("\n", "")
-
-                """ Adding to the attribute testees, which should be in the form of a list, and the same goes for
-                conv_partner. """
-                testee = conv_agents.load_conv_agent(testee_str, role="Testee")[0]
-                self.testees = [testee]
-                conv_partner = conv_agents.load_conv_agent(
-                    conv_partner_str, role="Other agent"
-                )[0]
-                self.conv_partner = conv_partner
-
-                """ Pops all the first elements until the separator '####' is found, due to them being informational 
-                details about the conversations, e.g. who is tested and who is the conversation partner. """
-                while True:
-                    popped_row = lines.pop(0).replace("\n", "")
-                    if popped_row == "####":
-                        break
-
-                lines = self.transform_lines_to_lists(lines)
-
-                for conversation in lines:
-                    conv = Conversation(testee=testee, conv_partner=conv_partner)
+                conversations = self.transform_lines_to_lists(lines)
+                testee = conv_agents.AbstractAgent(
+                    config[run_id]["testee_id"], role="Testee"
+                )
+                conv_partner = conv_agents.AbstractAgent(
+                    config[run_id]["conv_partner_id"], role="Other agent"
+                )
+                self.testee_ids.append(config[run_id]["testee_id"])
+                for conversation in conversations:
+                    conv = Conversation(
+                        testee,
+                        conv_partner,
+                        run_id,
+                        self.experiment_path,
+                        self.args,
+                    )
                     conv.conv_from_file(
                         list_of_msgs_str=conversation,
-                        testee=testee,
-                        conv_partner=conv_partner,
+                        testee=config[run_id]["testee_id"],
+                        conv_partner=config[run_id]["conv_partner_id"],
                     )
-                    self.conversations.append(conv)
+                    run_convs.append(conv)
+            self.conversations[run_id] = run_convs
         return self.conversations
 
     @staticmethod
@@ -263,8 +276,8 @@ class TestWorld:
 
     def export_results(self):
         """Exports the results using the selected presentation way."""
-        if config.VERBOSE:
+        if self.args.verbose:
             print("Exporting results")
         self.test_manager.export_results()
-        if config.VERBOSE:
+        if self.args.verbose:
             print("Export finished")

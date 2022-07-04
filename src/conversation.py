@@ -1,11 +1,13 @@
 import random
 from transformers import pipeline
-import config
+from pathlib import Path
 import src.worlds as worlds
 
 interview_questions = []
 
-with open("questions.txt", "r", encoding="utf-8") as f:
+with open(
+    Path(__file__).parents[1].resolve() / "data/questions.txt", "r", encoding="utf-8"
+) as f:
     interview_questions = f.read().split("\n")
 
 
@@ -33,24 +35,6 @@ def generate_random_text():
     return generated_response
 
 
-def clean_from_excluded_tokens(sentence):
-    """Method for cleansing strings from tokens that are specified to be excluded in the miscellaneous .txt-files/
-    excluded_tokens.txt."""
-    excluded_tokens = set_of_excluded_tokens()
-    for elem in excluded_tokens:
-        sentence = sentence.replace(elem, "")
-    return sentence
-
-
-def set_of_excluded_tokens():
-    """Method for reading the excluded tokens that are tokens that should be disregarded. They are specified in
-    miscellaneous .txt-files/excluded_tokens.txt."""
-    with open("miscellaneous .txt-files/excluded_tokens.txt") as f:
-        lines = f.readlines()
-    lines = [elem.replace("\n", "") for elem in lines]
-    return lines
-
-
 def count_sentences_within_string(text):
     """Method for counting how many sentences there are within a text. Based upon the logic that every sentence ends
     with either ".", "!" or "?"."""
@@ -76,30 +60,31 @@ def count_sentences_within_string(text):
 class Conversation:
     """Class for keeping track of a conversation, which includes several messages"""
 
-    def __init__(self, testee, conv_partner, conv_starter=""):
+    def __init__(self, testee, conv_partner, run_id, experiment_path, args):
         self.messages = []
         self.whose_turn = ""
+        self.args = args
+
         self.testee = testee
         self.conv_partner = conv_partner
 
-        """ Only randomizes conversation start if config.RANDOM_CONV_START is True. """
-        if config.RANDOM_CONV_START:
+        """ Only randomizes conversation start if args.random is True. """
+        if self.args.random_conv_start and self.args.read_run_ids == "":
             message = Message(generate_random_text(), "generator", "generator")
             self.messages.append(message)
             print("{}: {}".format("Generated starter", str(self.messages[0])))
-            if config.LOG_CONVERSATION:
-                message.add_to_txt(testee=self.testee)
+            message.add_to_txt(run_id, experiment_path)
 
-        """ If conv_starter is specified from the CLI, conv_starter is not None and the starter is set according to the
-            conv_starter. If it is none, it is randomized with 50/50 probability if testee or conv_partner starts. """
-        if conv_starter.lower() == "testee":
-            self.whose_turn = testee
-        elif conv_starter.lower() == "conv_partner":
-            self.whose_turn = conv_partner
-        elif random.randint(0, 1) == 0:
-            self.whose_turn = testee
-        else:
-            self.whose_turn = conv_partner
+            """ If conv_starter is specified from the CLI, conv_starter is not None and the starter is set according to the
+                conv_starter. If it is none, it is randomized with 50/50 probability if testee or conv_partner starts. """
+            if self.args.conv_starter.lower() == "testee":
+                self.whose_turn = self.testee
+            elif self.args.conv_starter.lower() == "conv_partner":
+                self.whose_turn = self.conv_partner
+            elif random.randint(0, 1) == 0:
+                self.whose_turn = self.testee
+            else:
+                self.whose_turn = self.conv_partner
 
     def __getitem__(self, item):
         return self.messages[item]
@@ -110,22 +95,20 @@ class Conversation:
     def __iter__(self):
         return iter(self.messages)
 
-    def initiate_conversation(self, conv_length):
+    def initiate_conversation(self, conv_length, run_id, experiment_path):
         """Function for running one conversation between testee and conv_partner. The function lets every GDM produce
             conv_length responses with regards to the conversation and last response produced. The messages produced are
             stored in self.messages which is then returned to TestWorld.
         Loops 2 * conv_length response requests, where each turn self.whos_turn produces the response and then
                 self.whos_turn is switched to the other conversation partner."""
-        for i in range(2 * conv_length):
+        for _ in range(2 * conv_length):
             message = self.produce_message()
-            if config.LOG_CONVERSATION:
-                message.add_to_txt(testee=self.testee)
+            message.add_to_txt(run_id, experiment_path)
             self.messages.append(message)
             self.switch_turn()
 
         """ To indicate where a conversation ends in the .txt. """
-        if config.LOG_CONVERSATION:
-            worlds.write_to_txt(testee_gdm_id=self.testee.get_id(), text="####\n")
+        worlds.write_to_txt("####\n", run_id, experiment_path)
         return self
 
     def produce_message(
@@ -140,18 +123,16 @@ class Conversation:
                 agent_id=injected_sent_id,
                 role=injected_sent_role,
             )
-            print(
-                "{}: {}".format(injected_sent_role, str(message))
-            ) if config.VERBOSE else print()
+            if self.args.verbose:
+                print("{}: {}".format(injected_sent_role, str(message)))
         else:
             message = Message(
                 self.whose_turn.act(self.str_conversation()),
                 self.whose_turn.get_id(),
                 role=self.whose_turn.get_role(),
             )
-            print(
-                "{}: {}".format(self.whose_turn.get_role(), str(message))
-            ) if config.VERBOSE else print()
+            if self.args.verbose:
+                print("{}: {}".format(self.whose_turn.get_role(), str(message)))
         return message
 
     def switch_turn(self):
@@ -173,23 +154,17 @@ class Conversation:
         """Returns list of messages."""
         return self.messages
 
-    def conv_from_file(self, list_of_msgs_str: list, testee, conv_partner):
+    def conv_from_file(self, list_of_msgs_str, testee, conv_partner):
         """Work in progress."""
         for message in list_of_msgs_str:
             gdm_role, sentence = message.split(":", maxsplit=1)
-            gdm_id = (
-                testee.get_id()
-                if gdm_role.lower() == "testee"
-                else conv_partner.get_id()
-            )
+            testee_id = testee if gdm_role.lower() == "testee" else conv_partner
             new_message = self.produce_message(
                 injected_sent=sentence,
-                injected_sent_id=gdm_id,
+                injected_sent_id=testee_id,
                 injected_sent_role=gdm_role,
             )
             self.messages.append(new_message)
-            self.switch_turn()
-        return self
 
     def get_testee_id(self):
         """Returns the ID of the testee for self (the Conversation-object self)."""
@@ -221,22 +196,22 @@ class Conversation:
 class InterviewConversation(Conversation):
     """Specific Interview implementaiton"""
 
-    def __init__(self, testee, conv_partner):
+    def __init__(self, testee, conv_partner, run_id, experiment_path, args):
         # conv_starter = "Testee"
         self.messages = []
         self.testee = testee
         self.conv_partner = conv_partner
+        self.args = args
 
         " Initiate the conversation with a random interview question "
 
-        """ Only randomizes conversation start if config.RANDOM_CONV_START is True. """
+        """ Only randomizes conversation start if args.random_conv_start is True. """
         message = Message(
             get_interview_question(), "question_generator", "question_generator"
         )
         self.messages.append(message)
         print("{}: {}".format("Starter question", str(self.messages[0])))
-        if config.LOG_CONVERSATION:
-            message.add_to_txt(testee=self.testee)
+        message.add_to_txt(run_id, experiment_path)
 
         self.whose_turn = conv_partner
 
@@ -267,8 +242,7 @@ class Message:
         """Function for returning the role of the GDM who produced self. Returns either 'Testee' or 'Other agent'."""
         return self.role.lower()
 
-    def add_to_txt(self, testee):
+    def add_to_txt(self, run_id, experiment_path):
         worlds.write_to_txt(
-            testee_gdm_id=testee.get_id(),
-            text="{}:{}\n".format(self.role, self.message),
+            "{}:{}\n".format(self.role, self.message), run_id, experiment_path
         )

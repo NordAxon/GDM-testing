@@ -18,13 +18,11 @@ import warnings
 class AbstractAgent(abc.ABC):
     """Abstract base class that defines the interface for a conversational agent."""
 
-    @abc.abstractmethod
     def __init__(self, agent_id, role="Other agent"):
         """Make sure to start the server on which you run your GDM, should you have any."""
         self.agent_id = agent_id
         self.role = role
 
-    @abc.abstractmethod
     def act(self, messages) -> Message:
         """Define how to get a reply from the agent."""
         pass
@@ -199,6 +197,7 @@ available_agents = {
     "emely03": Emely,
     "emely04": Emely,
     "emely05": Emely,
+    "emely06": Emely,
 }
 
 
@@ -218,4 +217,4 @@ def load_conv_agent(agents, role="Other agent"):
         else:
             warnings.warn(f"Did not find {agent} in supported agents!")
         list_conv_agents.append(agent_object)
-    return list_conv_agents
+    return list_conv_agents, agents
