@@ -1,66 +1,69 @@
 # Generative Dialogue Model Automatic Quality Assurance tool
 
 ## Description
-This is the test framework developed in the Master's Thesis Project *Quality Measurement of Generative Dialogue Models for Language Practice*, conducted at the Computer Science institution at the Faculty of Engineering at Lund University, Sweden.
+
+This repository contains a framework for testing and evaluating GDMs.
+There are two steps in the process:
+
+1. Generating conversations.
+- We divide the output into experiments with unique experiment ids.
+- Each experiment contains a number of runs with numerical ids.
+- Generated conversations are stored in ```test_data/{EXPERIMENT_ID}/run_{RUN_ID}.txt```
+- The configurations for all runs in an experiment are stored in ```test_data/{EXPERIMENT_ID}/experiment_config.json```
+
+2. Analyzing the conversations.
+- Test results are stored in an SQL-database in ```test_results/{EXPERIMENT_ID}.sqlite```
+- The configuration for each run is contained in the table ```runs```
+- Each test-case is then imported into a separate table each.
+- If we want to analyze conversations that have already been generated we can use the argument ```--read-run-ids``` to read these from the chosen .txt-files determined by the run_id.
 
 
 ## How to run
-First, install dependencies
+
+Install dependencies
 
 ```
 # clone project
-git clone https://github.com/JoohanBengtsson/GDM-testing
+git clone git@github.com:NordAxon/GDM-testing.git
 
 # install project
 cd GDM-testing
 pip install -e .
 pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
 ```
- ```   
-```
 
-The testing is run by:
+Testing is run by:
 
 ```
 # run module
 python main.py <OPTIONS> [PARAMETERS]
 ```
 
-Where several options are available and needed, as to fit your sought for set up of GDMs. Run `python main.py -h` to have the options presented, or read below:
+Run `python main.py -h` to have the options presented, or see below:
 
 ```
 # options available
-usage: main.py [-h] [-l] [-a] [-t] [-cp] [-ec] [-is] [-v] [-cs] [-rf] [-ot]
+usage: main.py [-h] [-eid EXPERIMENT_ID] [-v] [-ec] [-od] [-cl] [-cs] [-rcs RANDOM_CONV_START] [-a] [-cp] [-t] [-im] [-rid]
 
 Parser for setting up the script as you want
 
 optional arguments:
-  -h, --help            show this help message and exit
-  --interview-mode      All conversations start with a random interview-question
-  -l , --length-conv-round
-                        How many rounds shall there be per conversation until restart
-  -a , --amount-convs   How many conversations shall there be per tested GDM
-  -t , --tested-gdms    Write one or several GDMs you want to test. If several, have them separated by ','.
-  -cp , --conv-partner
-                        Specify which GDM to test your GDM against
-  -ec , --export-channel
-                        Specify which channel to export the results through. Currently only 'sqlite' is implemented
-  -is , --internal-storage
-                        Specify which channel to use for the internal storage of results. Currently only 'json' is
-                        implemented.
-  -v, --verbose         True: The script prints out what happens so that the user may follow the process. False: A
-                        silent run of the script where nothing is printed. Defaults to True.
-  -cs , --conv-starter
-                        Testee: testee initiates every conversation. Conv-partner: the conversation partner initiates
-                        all conversations. Not specified: 50-50 per conversation who starts that conversation.
-  -rf , --read-file-name
-                        The path to the file you want to read into the script. Interprets the letters behind the '.'
-                        as the file type. No input is interpreted as such the script generates conversations using the
-                        GDMs. Currently only miscellaneous .txt-files are supported.
-  -ot, --overwrite-table
-                        Should the current table be overwritten or should the results be inserted into the currently
-                        existing one. True for creating a new table, False for inserting into the currently existing
-                        database-file. Defaults to True.
+  -h, --help                show this help message and exit
+  -eid, --experiment_id     We divide all runs into experiments with a unique identifier.
+  -v, --verbose             Use verbose printing.
+  -ec , --export-channel    Specify which channel to export the results through. Currently only 'sqlite' is available.
+  -od, --overwrite-db       Specifies if the result database should be overwritten during computation.
+  -cl , --conv-length       How many replies from each GDM all conversations should contain.
+  -cs , --conv-starter      Testee: testee initiates every conversation.
+                            Conv-partner: the conversation partner initiates all conversations. Not specified: 50-50.
+  -rcs, --random-conv-start Start conversations with a random reply.
+  -a , --amount-convs       How many conversations shall there be per tested GDM.
+  -cp , --conv-partner_id   Specify which GDM to run your testees against.
+  -t , --testee-ids         Names of local docker images to use for each run, separated by ",".
+  -im, --interview-mode     Conversations are initialized as interview scenarios.
+  -rid , --read-run-ids     Run ids of the runs to import.
+                            No input is interpreted as such the script generates conversations using the GDMs.
+                            Currently only miscellaneous .txt-files are supported.
 ```
 
 ### Visualise the results from the SQLite-file
@@ -74,7 +77,8 @@ optional arguments:
 6. There click "Add data source" and add the path to your SQLite-file, which by default is located in your local repository.
 7. When you have added the data source, the dashboard should visualise all the implemented test case results. You are also free to make new figures, to which you can fetch data from the SQLite-file by doing SQLite-queries through Grafana.
 
-### Citation   
+### Citation
+
 ```
 @article{JohanBengtsson2022,
   title={Quality Measurement of Generative Dialogue Models for Language Practice},
@@ -82,13 +86,4 @@ optional arguments:
   year={2022}
 }
 ```
-
-![](imgs/Test%20architecture.drawio.png)
-The proposed architecture as of now for the test framework.
-
-![](imgs/Class%20diagram.drawio.png)
-
-The proposed class diagram for the test framework as of now.
-
-Both are subject to changes.
 
