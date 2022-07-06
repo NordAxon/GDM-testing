@@ -1,9 +1,12 @@
 # Generative Dialogue Model Automatic Quality Assurance tool
 
+![](imgs/GDM-testing-graphs-crop.png)
+
 ## Description
 
-This repository contains a framework for testing and evaluating GDMs.
-There are two steps in the process:
+This repository contains a framework for testing and evaluating GDMs. The visualizations in this readme shows results from testing different versions of the GDM named Emely adapted for interviews.
+
+There are two steps in ```main.py```:
 
 1. Generating conversations.
 - We divide the output into experiments with unique experiment ids.
@@ -66,16 +69,19 @@ optional arguments:
                             Currently only miscellaneous .txt-files are supported.
 ```
 
-### Visualise the results from the SQLite-file (Deprecated)
+### Visualise the results using Dash
 
-1. Install and set up a Grafana-server. More information about that can be found here: https://grafana.com/docs/grafana/latest/setup-grafana/installation/.
-2. Log in with username: admin, password: admin on localhost:3000 and choose a new password.
-3. Install the SQLite plugin from settings/plugins.
-3. Hold over the '+'-sign corresponding to the 'Create' menu. In the shown menu, click 'Import'.
-4. In the box "Import via panel json", paste in the dashboard-json which can be found in the repository in the file 'dashboard-json.tex', and click load.
-5. Then, hold over the 'Gear'-icon on the left to show the "Configuration". There, click "Data sources"
-6. There click "Add data source" and add the path to your SQLite-file, which by default is located in your local repository.
-7. When you have added the data source, the dashboard should visualise all the implemented test case results. You are also free to make new figures, to which you can fetch data from the SQLite-file by doing SQLite-queries through Grafana.
+1. Run ```python dashboard.py```
+2. If experiment results exist you can choose between experiments in the dropdown to the top left.
+3. The graphs are shown in the right tab:
+
+![](imgs/GDM-testing-graphs.png)
+
+4. The run-configurations are shown in the left tab:
+
+![](imgs/GDM-testing-config.png)
+
+5. To add your own graphs implement this in ```visualization/graphs.py```.
 
 ### Citation
 
