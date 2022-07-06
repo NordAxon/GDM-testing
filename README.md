@@ -1,4 +1,4 @@
-# Generative Dialogue Model Automatic Quality Assurance tool
+# Generative Dialogue Model Automated Quality Assurance Tool
 
 ![](imgs/GDM-testing-graphs-crop.png)
 
