@@ -1,0 +1,350 @@
+body {
+    background-color: #1e2130;
+    color: #f3f5f4;
+    font-family: "Open Sans", sans-serif;
+    width: 100%;
+    height: 100vh;
+    max-width: 100% !important;
+    overflow-x: hidden;
+    margin: 0;
+}
+
+#big-app-container {
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 6rem;
+}
+
+.banner {
+    height: fit-content;
+    background-color: #1e2130;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #4B5460;
+    padding: 1rem 10rem;
+    width: 100%;
+}
+
+.banner h4 {
+    font-family: 'Open Sans Semi Bold', sans-serif;
+    font-weight: 500;
+    line-height: 1.2;
+    font-size: 1.6rem;
+    letter-spacing: 0.1rem;
+    text-align: left;
+}
+
+.banner h5 {
+    font-family: 'Open Sans Semi Bold', sans-serif;
+    font-weight: 500;
+    line-height: 1.2;
+    font-size: 2.5rem;
+    letter-spacing: 0.1rem;
+    text-transform: uppercase;
+    text-align: right;
+}
+
+.banner h6 {
+    font-size: 1.6rem;
+    line-height: 1;
+    text-align: right;
+}
+
+/* Tabs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– */
+
+#tabs {
+    width: 100%;
+}
+
+.custom-tabs {
+    background-color: #1E2130;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-size: 14px;
+    height: fit-content;
+    cursor: pointer;
+}
+
+#Specs-tab.custom-tab,
+#Viz-tab.custom-tab {
+    background-color: #161a28;
+    letter-spacing: 1px;
+    color: inherit;
+    border: 0;
+    border-bottom: #1E2130 solid 4px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    height: 18px;
+}
+
+#Specs-tab.custom-tab--selected,
+#Viz-tab.custom-tab--selected {
+    border-bottom: #DC143C solid 4px !important;
+}
+
+#Specs-tab.custom-tab {
+    margin-right: 3px;
+}
+
+#Viz-tab.custom-tab {
+    margin-left: 3px;
+}
+
+.section-banner {
+    color: darkgray;
+    font-size: 3rem;
+    text-align: center;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #4b5460;
+    border-top: 5px solid #4b5460;
+}
+
+/* Tab 1
+  ----------------------------------------------*/
+
+.output-datatable {
+    margin: 2rem 0rem 2rem 2rem;
+    line-height: 3;
+    align-self: flex-end;
+    width: 80%;
+}
+
+/*Dropdown*/
+.setting-input {
+    width: 100% !important;
+    height: 100%;
+}
+
+.react-numeric-input,
+.react-numeric-input input {
+    width: 100% !important;
+}
+
+.react-numeric-input input {
+    background-color: #242633 !important;
+    border-color: darkgray !important;
+    color: white !important;
+}
+
+.react-numeric-input b:nth-child(2) i {
+    border-color: transparent transparent white !important;
+}
+
+.react-numeric-input b:nth-child(3) i {
+    border-color: white transparent transparent !important;
+}
+
+
+/* Dropdown
+  ----------------------------------------------*/
+
+/*Dropdown items*/
+.Select-control,
+.Select-multi-value-wrapper,
+.Select-menu-outer div {
+    background-color: #242633;
+}
+
+/*Dropdown items*/
+.Select-control,
+.Select,
+.Select-value-label,
+.Select-clear-zone {
+    color: white;
+}
+
+
+/*Dropdown items*/
+.Select-menu-outer {
+    background-color: #242633;
+    border: 1px solid darkgray !important;
+}
+
+/*Dropdown items*/
+.Select-menu-outer div:hover {
+    background-color: rgba(36, 38, 51, 0.5) !important;
+    cursor: pointer;
+}
+
+/*Dropdown arrow + delete button*/
+.Select-control,
+.Select-control>span {
+    color: white;
+    background: #242633 !important;
+}
+
+/*Placeholder*/
+.Select.has-value.Select--single>.Select-control .Select-value .Select-value-label,
+.Select.has-value.is-pseudo-focused.Select--single>.Select-control .Select-value .Select-value-label {
+    color: white !important;
+}
+
+/*Placeholder*/
+.Select--single>.Select-control .Select-value,
+.Select-placeholder {
+    /*border: 1px solid darkgray;*/
+    border-radius: 4px;
+    background-color: #242633;
+    cursor: pointer;
+}
+
+
+.Select.is-focused:not(.is-open)>.Select-control {
+    border-color: #DC143C !important;
+}
+
+/* Container
+  –––––––––––––––––––––––––––––––––––––––––––––––––– */
+
+#app-container {
+    background: #161a28;
+    margin: 1rem 2rem;
+    max-width: 100%;
+    width: 100%;
+}
+
+#app-content {
+    background: inherit;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+#id-select-menu {
+    flex: 1 1 0;
+    width: 20%;
+    max-width: 20%;
+}
+
+#status-container {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+}
+
+#settings-container {
+    display: flex;
+    flex-direction: column;
+    flex: 3 1;
+    max-width: calc(75%);
+    width: 70%;
+}
+
+/* Graphs
+*/
+#graphs-container {
+    display: flex;
+    flex-direction: column;
+    flex: 3 1;
+    max-width: calc(100%);
+    width: 100%;
+}
+
+#vocsz {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#vocsz1 {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#vocsz2 {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#tox {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#tox1 {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#tox2 {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#readind {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#readind1 {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#readind2 {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#coher {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#coher1 {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
+
+#coher2 {
+    display: flex;
+    flex-direction: row;
+    flex: 3 1;
+    max-width: 100%;
+    width: 100%;
+}
