@@ -68,7 +68,7 @@ class Conversation:
         self.testee = testee
         self.conv_partner = conv_partner
 
-        """ Only randomizes conversation start if args.random is True. """
+        """ Only randomizes conversation start if args.random_conv_start is True. """
         if self.args.random_conv_start and self.args.read_run_ids == "":
             message = Message(generate_random_text(), "generator", "generator")
             self.messages.append(message)

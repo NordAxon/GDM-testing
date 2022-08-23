@@ -198,6 +198,9 @@ available_agents = {
     "emely04": Emely,
     "emely05": Emely,
     "emely06": Emely,
+    "luis_han": Emely,
+    "jani_peralez": Emely,
+    "jeremy_hench": Emely,
 }
 
 

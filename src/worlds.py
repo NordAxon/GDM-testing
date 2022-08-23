@@ -41,8 +41,9 @@ class TestWorld:
     def __init__(self, args):
         self.args = args
 
-        # Kill all running containers
-        os.system("docker kill $(docker ps -q)")
+        # # Kill all running containers
+        # os.system("docker stop $(docker ps -a -q)")
+        # os.system("docker rm $(docker ps -a -q)")
 
         """ Loads and instantiates the GDMs. """
         if args.read_run_ids == "":
@@ -244,11 +245,7 @@ class TestWorld:
                 self.testee_ids.append(config[run_id]["testee_id"])
                 for conversation in conversations:
                     conv = Conversation(
-                        testee,
-                        conv_partner,
-                        run_id,
-                        self.experiment_path,
-                        self.args,
+                        testee, conv_partner, run_id, self.experiment_path, self.args,
                     )
                     conv.conv_from_file(
                         list_of_msgs_str=conversation,
