@@ -362,12 +362,18 @@ class CoherentResponseTest(AbstractConvTest, ABC):
         text_pairs = [
             (first, second) for first, second in zip(first_sentences, second_sentences)
         ]
-        encodings = self.bert_tokenizer.batch_encode_plus(
-            text_pairs, return_tensors="pt", padding=True
-        ).to(self.device)
-        outputs = self.bert_model(**encodings)
-        probs = outputs.logits.softmax(dim=-1)
-        return probs.tolist()
+        probs = []
+        for i in range(0, len(text_pairs), 100):
+            encodings = self.bert_tokenizer.batch_encode_plus(
+                text_pairs[i : i + 100],
+                return_tensors="pt",
+                padding=True,
+                max_length=512,
+                truncation=True,
+            ).to(self.device)
+            outputs = self.bert_model(**encodings)
+            probs.append(outputs.logits.softmax(dim=-1).tolist())
+        return probs
 
     @staticmethod
     def softmax(vector):

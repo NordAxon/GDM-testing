@@ -10,7 +10,7 @@ def create_sqlite(args):
         db_filename = f"test_results/{args.experiment_id}.sqlite"
         db_path = Path(__file__).parents[1].resolve() / db_filename
         # Makes sure to set up the sqlite-database according to the create-tables.sql-file.
-        if not db_path.exists() or args.overwrite_table:
+        if not db_path.exists() or args.overwrite_db:
             if args.verbose:
                 print("Creating new database file.")
             os.system("sqlite3 {} < create-tables.sql".format(db_filename))

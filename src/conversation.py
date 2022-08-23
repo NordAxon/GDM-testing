@@ -16,7 +16,7 @@ def generate_random_text():
     start_str"""
 
     # Reads conversation starters from the conv-starters.txt-file and samples one from them randomly.
-    with open("miscellaneous .txt-files/conv-starters.txt") as f:
+    with open(Path(__file__).parents[1].resolve() / "data/conv-starters.txt") as f:
         lines = f.readlines()
 
     start_str = random.sample(lines, 1)[0].split("\n")[0]

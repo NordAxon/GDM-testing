@@ -231,7 +231,7 @@ class TestWorld:
         config = {int(k): v for k, v in config.items()}
         for run_id in run_ids:
             run_convs = []
-            with open(self.experiment_path / f"run_{run_id}.txt") as f:
+            with open(self.experiment_path / f"run_{run_id}.txt", encoding="utf8") as f:
                 lines = f.readlines()
 
                 conversations = self.transform_lines_to_lists(lines)

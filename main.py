@@ -19,7 +19,7 @@ def debug_script_setup(args):
     args.export_channel = config.EXPORT_CHANNEL
     args.read_run_ids = config.READ_RUN_IDS
     args.experiment_id = config.EXPERIMENT_ID
-    args.overwrite_table = config.OVERWRITE_TABLE
+    args.overwrite_db = config.OVERWRITE_TABLE
     args.random_conv_start = config.RANDOM_CONV_START
     args.interview_mode = config.INTERVIEW_MODE
     return args
@@ -53,7 +53,7 @@ if __name__ == "__main__":
             "The setup of test world took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                 end_time_test_world,
                 end_time_test_world / 60,
-                end_time_test_world / (60 ** 2),
+                end_time_test_world / (60**2),
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             )
         )
@@ -68,7 +68,7 @@ if __name__ == "__main__":
             "The generation of conversations took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                 end_time_convs,
                 end_time_convs / 60,
-                end_time_convs / (60 ** 2),
+                end_time_convs / (60**2),
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             )
         )
@@ -81,7 +81,7 @@ if __name__ == "__main__":
             "The tests took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                 end_time_tests,
                 end_time_tests / 60,
-                end_time_tests / (60 ** 2),
+                end_time_tests / (60**2),
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             )
         )
@@ -94,7 +94,7 @@ if __name__ == "__main__":
             "The export took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                 end_time_export,
                 end_time_export / 60,
-                end_time_export / (60 ** 2),
+                end_time_export / (60**2),
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             )
         )
@@ -105,7 +105,7 @@ if __name__ == "__main__":
             "The script took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                 end_time,
                 end_time / 60,
-                end_time / (60 ** 2),
+                end_time / (60**2),
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             )
         )

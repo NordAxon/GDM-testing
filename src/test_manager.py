@@ -10,8 +10,8 @@ from config import tests_to_run
 
 implemented_tests = {
     "static_tests": {
-        "TOX": tests.ToxicContentTest,
-        "VOCSZ": tests.VocabularySizeTest,
+        # "TOX": tests.ToxicContentTest,
+        # "VOCSZ": tests.VocabularySizeTest,
         "COHER": tests.CoherentResponseTest,
         "READIND": tests.ReadabilityIndexTest,
     },
@@ -62,7 +62,7 @@ class TestManager:
                             self.config[run_id]["conv_length"],
                             self.config[run_id]["amount_convs"],
                             self.config[run_id]["conv_starter"],
-                            self.config[run_id]["date_time_generated"],
+                            self.config[run_id]["date_time"],
                             datetime.utcnow(),
                         ],
                     )
@@ -72,7 +72,9 @@ class TestManager:
                         UPDATE runs
                         SET date_time_tested=?;
                         """,
-                        [datetime.utcnow(),],
+                        [
+                            datetime.utcnow(),
+                        ],
                     )
 
                 # Successful insert
@@ -102,7 +104,7 @@ class TestManager:
                     "The test case took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                         end_time_tc,
                         end_time_tc / 60,
-                        end_time_tc / (60 ** 2),
+                        end_time_tc / (60**2),
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     )
                 )
@@ -123,7 +125,7 @@ class TestManager:
                         "The script took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                             end_time_tc,
                             end_time_tc / 60,
-                            end_time_tc / (60 ** 2),
+                            end_time_tc / (60**2),
                             datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                         )
                     )
@@ -142,7 +144,7 @@ class TestManager:
                     "Finished. The export took {:.2f} seconds / {:.2f} minutes / {:.2f} hours and finished at {}".format(
                         end_time_export,
                         end_time_export / 60,
-                        end_time_export / (60 ** 2),
+                        end_time_export / (60**2),
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     )
                 )
