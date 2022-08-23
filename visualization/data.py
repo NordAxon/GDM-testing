@@ -13,7 +13,7 @@ def get_available_experiment_ids() -> List[str]:
     ids = []
     for filename in os.listdir(result_path):
         if filename.endswith(".sqlite"):
-            ids.append(filename.rstrip(".sqlite"))
+            ids.append(filename[:-7])
     return ids
 
 
