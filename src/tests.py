@@ -372,7 +372,7 @@ class CoherentResponseTest(AbstractConvTest, ABC):
                 truncation=True,
             ).to(self.device)
             outputs = self.bert_model(**encodings)
-            probs.append(outputs.logits.softmax(dim=-1).tolist())
+            probs += outputs.logits.softmax(dim=-1).tolist()
         return probs
 
     @staticmethod
