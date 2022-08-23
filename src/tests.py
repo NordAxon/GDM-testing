@@ -467,10 +467,13 @@ class ReadabilityIndexTest(AbstractConvTest, ABC):
                         nbr_words += 1
                     if len(word) > 6:
                         nbr_words_grt_6 += 1
-        readability_index = (
-            nbr_words / nbr_sentences + nbr_words_grt_6 / nbr_words * 100
-        )
-        return readability_index
+        try:
+            readability_index = (
+                nbr_words / nbr_sentences + nbr_words_grt_6 / nbr_words * 100
+            )
+            return readability_index
+        except:
+            return 0
 
     def get_id(self):
         return self.test_id
