@@ -10,8 +10,8 @@ from config import tests_to_run
 
 implemented_tests = {
     "static_tests": {
-        # "TOX": tests.ToxicContentTest,
-        # "VOCSZ": tests.VocabularySizeTest,
+        "TOX": tests.ToxicContentTest,
+        "VOCSZ": tests.VocabularySizeTest,
         "COHER": tests.CoherentResponseTest,
         "READIND": tests.ReadabilityIndexTest,
     },
